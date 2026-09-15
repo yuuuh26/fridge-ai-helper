@@ -1,0 +1,1 @@
+# fridge-ai-helper
