@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#103c34">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="description" content="冷蔵庫の食材をAIへ素早く伝える個人用アプリ">
+  <title>冷蔵庫AIヘルパー</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">FRIDGE → AI</p>
+        <h1>冷蔵庫AIヘルパー</h1>
+        <p class="hero-copy">今ある食材を、料理AIへ10秒で。</p>
+      </div>
+      <div class="hero-icon" aria-hidden="true">🥬</div>
+    </header>
+
+    <section class="selection-board" aria-labelledby="selected-heading">
+      <div class="section-title-row">
+        <h2 id="selected-heading">今回使う食材</h2>
+        <span id="selected-count" class="count-badge">0品</span>
+      </div>
+
+      <div class="selection-group required-group">
+        <div class="group-heading">
+          <span class="status-dot required-dot" aria-hidden="true"></span>
+          <h3>必ず使う</h3>
+        </div>
+        <div id="required-summary" class="summary-list" aria-live="polite">
+          <p class="empty-note">まだ選ばれていません</p>
+        </div>
+      </div>
+
+      <div class="selection-group optional-group">
+        <div class="group-heading">
+          <span class="status-dot optional-dot" aria-hidden="true"></span>
+          <h3>使ってもOK</h3>
+        </div>
+        <div id="optional-summary" class="summary-list" aria-live="polite">
+          <p class="empty-note">まだ選ばれていません</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="pantry" aria-labelledby="pantry-heading">
+      <div class="section-title-row pantry-title-row">
+        <div>
+          <h2 id="pantry-heading">食材候補</h2>
+          <p class="section-help">カードをタップ：未選択 → 使ってもOK → 必ず使う</p>
+        </div>
+      </div>
+
+      <form id="add-form" class="add-form" autocomplete="off">
+        <label class="sr-only" for="ingredient-name">追加する食材名</label>
+        <input id="ingredient-name" name="ingredientName" type="text" maxlength="40" placeholder="例：玉ねぎ" required>
+        <button type="submit" class="add-button">＋ 食材を追加</button>
+      </form>
+
+      <div id="ingredient-list" class="ingredient-list"></div>
+      <div id="empty-state" class="empty-state">
+        <div class="empty-illustration" aria-hidden="true">🧺</div>
+        <h3>食材を追加して始めよう</h3>
+        <p>上の入力欄から、冷蔵庫にある食材を登録できます。</p>
+      </div>
+    </section>
+
+    <details class="settings-card">
+      <summary>設定・情報</summary>
+      <div class="settings-content">
+        <div class="setting-row">
+          <span>永続ストレージ</span>
+          <strong id="storage-status">確認中…</strong>
+        </div>
+        <div class="url-block">
+          <span>アプリ公開URL</span>
+          <code id="app-url">https://yuuuh26.github.io/fridge-ai-helper/</code>
+          <button id="copy-url-button" class="secondary-button" type="button">URLをコピー</button>
+        </div>
+        <a class="repo-link" href="https://github.com/yuuuh26/fridge-ai-helper" target="_blank" rel="noopener noreferrer">GitHubリポジトリを開く</a>
+        <p class="privacy-note">食材データはこの端末内だけに保存され、外部へ送信されません。</p>
+        <p class="credit">Made by YUU</p>
+      </div>
+    </details>
+  </main>
+
+  <div class="bottom-action" role="region" aria-label="AI用リストのコピー">
+    <button id="copy-button" class="copy-button" type="button">
+      <span aria-hidden="true">📋</span>
+      AI用食材リストをコピー
+    </button>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <dialog id="delete-dialog" class="delete-dialog">
+    <form method="dialog">
+      <div class="dialog-icon" aria-hidden="true">🗑️</div>
+      <h2>食材を削除しますか？</h2>
+      <p id="delete-message"></p>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary-button">キャンセル</button>
+        <button value="confirm" class="danger-button">削除する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

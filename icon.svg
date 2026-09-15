@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="48" x2="444" y2="474" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#69efb9"/>
+      <stop offset="1" stop-color="#188968"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="13" flood-color="#053b2e" flood-opacity=".35"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g filter="url(#shadow)">
+    <rect x="126" y="78" width="260" height="356" rx="52" fill="#f5fffb"/>
+    <path d="M126 216h260" stroke="#a5ddc8" stroke-width="14"/>
+    <rect x="153" y="122" width="18" height="66" rx="9" fill="#198f6b"/>
+    <rect x="153" y="248" width="18" height="78" rx="9" fill="#198f6b"/>
+    <circle cx="316" cy="299" r="51" fill="#173e35"/>
+    <path d="M284 297c18-28 46-34 65-17-2 30-20 52-54 53-13-10-17-22-11-36Z" fill="#69efb9"/>
+    <path d="M297 318c12-15 25-27 43-36" stroke="#f5fffb" stroke-width="8" stroke-linecap="round"/>
+    <path d="M346 119l8 20 20 8-20 8-8 20-8-20-20-8 20-8 8-20Z" fill="#ffca6a"/>
+  </g>
+</svg>
