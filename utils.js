@@ -11,8 +11,7 @@ export function nextSelectionState(currentState) {
 
 export function formatIngredient(ingredient) {
   const quantity = String(ingredient.quantity ?? '').trim();
-  const unit = String(ingredient.unit ?? '').trim();
-  const amount = quantity ? `：${quantity}${unit}` : '';
+  const amount = quantity ? `：${quantity}` : '';
   const frozen = ingredient.isFrozen ? '（冷凍中）' : '';
   return `・${ingredient.name}${amount}${frozen}`;
 }
