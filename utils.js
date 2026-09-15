@@ -10,10 +10,7 @@ export function nextSelectionState(currentState) {
 }
 
 export function formatIngredient(ingredient) {
-  const quantity = String(ingredient.quantity ?? '').trim();
-  const amount = quantity ? `：${quantity}` : '';
-  const frozen = ingredient.isFrozen ? '（冷凍中）' : '';
-  return `・${ingredient.name}${amount}${frozen}`;
+  return `・${ingredient.name}`;
 }
 
 export function generateAiPrompt(ingredients) {
