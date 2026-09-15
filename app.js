@@ -2,7 +2,7 @@ import { getAllIngredients, removeIngredient, saveIngredient } from './db.js';
 import { generateAiPrompt, nextSelectionState, normalizeIngredientName } from './utils.js';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
-const STOCK_MODES = ['回', '常時'];
+const STOCK_MODES = ['回分', '常時'];
 const stateLabels = { none: '未選択', optional: '使ってもOK', required: '必ず使う' };
 const stateIcons = { none: '○', optional: '●', required: '●' };
 
@@ -40,9 +40,10 @@ function showToast(message, type = 'success') {
 }
 
 function ingredientSummary(item) {
+  const quantity = ['1', '2', '3'].includes(String(item.quantity ?? '')) ? String(item.quantity) : '';
   const stock = item.unit === '常時'
     ? ' 常時'
-    : item.quantity ? ` ${item.quantity}回` : '';
+    : quantity ? ` ${quantity}回分` : '';
   return `${item.name}${stock}${item.isFrozen ? ' ❄️' : ''}`;
 }
 
@@ -78,7 +79,7 @@ function createUnitSelect(item) {
   const select = document.createElement('select');
   select.className = 'unit-select';
   select.setAttribute('aria-label', `${item.name}の在庫管理方法`);
-  const currentMode = item.unit === '常時' ? '常時' : '回';
+  const currentMode = item.unit === '常時' ? '常時' : '回分';
 
   STOCK_MODES.forEach(mode => {
     const option = document.createElement('option');
@@ -112,18 +113,30 @@ function createIngredientCard(item) {
   const controls = document.createElement('div');
   controls.className = 'card-controls';
 
-  const stockMode = item.unit === '常時' ? '常時' : '回';
+  const stockMode = item.unit === '常時' ? '常時' : '回分';
 
-  const quantity = document.createElement('input');
+  const quantity = document.createElement('select');
   quantity.className = 'quantity-input';
-  quantity.type = 'number';
-  quantity.inputMode = 'numeric';
-  quantity.min = '0';
-  quantity.step = '1';
-  quantity.placeholder = stockMode === '常時' ? '常時' : '残り回数';
-  quantity.value = stockMode === '常時' ? '' : (item.quantity || '');
   quantity.disabled = stockMode === '常時';
   quantity.setAttribute('aria-label', `${item.name}の残り使用回数`);
+
+  const currentQuantity = ['1', '2', '3'].includes(String(item.quantity ?? ''))
+    ? String(item.quantity)
+    : '';
+
+  const quantityPlaceholder = document.createElement('option');
+  quantityPlaceholder.value = '';
+  quantityPlaceholder.textContent = stockMode === '常時' ? '—' : '回数';
+  quantityPlaceholder.selected = !currentQuantity;
+  quantity.append(quantityPlaceholder);
+
+  ['1', '2', '3'].forEach(value => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    option.selected = value === currentQuantity;
+    quantity.append(option);
+  });
 
   const unitSelect = createUnitSelect(item);
 
@@ -195,7 +208,7 @@ elements.addForm.addEventListener('submit', async event => {
     normalizedName,
     selectionState: 'none',
     quantity: '',
-    unit: '回',
+    unit: '回分',
     isFrozen: false,
     createdAt: now,
     updatedAt: now
@@ -247,20 +260,12 @@ elements.list.addEventListener('change', async event => {
   }
 
   if (event.target.matches('.unit-select')) {
-    const unit = event.target.value === '常時' ? '常時' : '回';
+    const unit = event.target.value === '常時' ? '常時' : '回分';
     const changes = unit === '常時'
       ? { unit, quantity: '' }
       : { unit };
     await persistChange(item.id, changes);
   }
-});
-
-elements.list.addEventListener('focusout', async event => {
-  if (!event.target.matches('.quantity-input')) return;
-  const card = event.target.closest('.ingredient-card');
-  const item = ingredients.find(candidate => candidate.id === card?.dataset.id);
-  if (!item) return;
-  await persistChange(item.id, { quantity: event.target.value.trim() });
 });
 
 elements.deleteDialog.addEventListener('close', async () => {
