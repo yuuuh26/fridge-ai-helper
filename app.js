@@ -10,6 +10,9 @@ const elements = {
   addForm: document.querySelector('#add-form'),
   nameInput: document.querySelector('#ingredient-name'),
   list: document.querySelector('#ingredient-list'),
+  constantList: document.querySelector('#constant-ingredient-list'),
+  constantSection: document.querySelector('#constant-pantry'),
+  constantCount: document.querySelector('#constant-count'),
   emptyState: document.querySelector('#empty-state'),
   requiredSummary: document.querySelector('#required-summary'),
   optionalSummary: document.querySelector('#optional-summary'),
@@ -162,10 +165,21 @@ function createIngredientCard(item) {
 }
 
 function render() {
-  const fragment = document.createDocumentFragment();
-  ingredients.forEach(item => fragment.append(createIngredientCard(item)));
-  elements.list.replaceChildren(fragment);
-  elements.emptyState.hidden = ingredients.length > 0;
+  const regularItems = ingredients.filter(item => item.unit !== '常時');
+  const constantItems = ingredients.filter(item => item.unit === '常時');
+
+  const regularFragment = document.createDocumentFragment();
+  regularItems.forEach(item => regularFragment.append(createIngredientCard(item)));
+  elements.list.replaceChildren(regularFragment);
+
+  const constantFragment = document.createDocumentFragment();
+  constantItems.forEach(item => constantFragment.append(createIngredientCard(item)));
+  elements.constantList.replaceChildren(constantFragment);
+
+  elements.emptyState.hidden = regularItems.length > 0;
+  elements.constantSection.hidden = constantItems.length === 0;
+  elements.constantCount.textContent = `${constantItems.length}品`;
+
   renderSelectionBoard();
 }
 
@@ -226,7 +240,7 @@ elements.addForm.addEventListener('submit', async event => {
   }
 });
 
-elements.list.addEventListener('click', async event => {
+document.querySelector('.app-shell').addEventListener('click', async event => {
   const card = event.target.closest('.ingredient-card');
   if (!card) return;
   const item = ingredients.find(candidate => candidate.id === card.dataset.id);
@@ -249,7 +263,7 @@ elements.list.addEventListener('click', async event => {
   }
 });
 
-elements.list.addEventListener('change', async event => {
+document.querySelector('.app-shell').addEventListener('change', async event => {
   const card = event.target.closest('.ingredient-card');
   if (!card) return;
   const item = ingredients.find(candidate => candidate.id === card.dataset.id);
