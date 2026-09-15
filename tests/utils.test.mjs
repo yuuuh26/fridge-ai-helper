@@ -13,9 +13,9 @@ test('ingredient names are normalized for duplicate checks', () => {
   assert.equal(normalizeIngredientName('ＡＢＣ'), 'abc');
 });
 
-test('ingredient formatting supports quantity and frozen state', () => {
-  assert.equal(formatIngredient({ name: '鶏もも肉', quantity: '1', unit: '枚', isFrozen: true }), '・鶏もも肉：1枚（冷凍中）');
-  assert.equal(formatIngredient({ name: 'キャベツ', quantity: '', unit: '玉', isFrozen: false }), '・キャベツ');
+test('ingredient formatting omits stock mode labels from copied text', () => {
+  assert.equal(formatIngredient({ name: '鶏もも肉', quantity: '2', unit: '回', isFrozen: true }), '・鶏もも肉：2（冷凍中）');
+  assert.equal(formatIngredient({ name: '塩', quantity: '', unit: '常時', isFrozen: false }), '・塩');
 });
 
 test('empty selection does not generate a prompt', () => {
@@ -24,13 +24,15 @@ test('empty selection does not generate a prompt', () => {
 
 test('prompt includes only present classifications', () => {
   const prompt = generateAiPrompt([
-    { name: '卵', quantity: '4', unit: '個', isFrozen: false, selectionState: 'required' },
-    { name: '玉ねぎ', quantity: '2', unit: '個', isFrozen: false, selectionState: 'optional' },
+    { name: '卵', quantity: '4', unit: '回', isFrozen: false, selectionState: 'required' },
+    { name: '玉ねぎ', quantity: '2', unit: '回', isFrozen: false, selectionState: 'optional' },
     { name: '牛乳', quantity: '', unit: '', isFrozen: false, selectionState: 'none' }
   ]);
   assert.match(prompt, /【絶対に使ってほしい食材】/);
-  assert.match(prompt, /・卵：4個/);
+  assert.match(prompt, /・卵：4/);
+  assert.doesNotMatch(prompt, /4回/);
   assert.match(prompt, /【冷蔵庫・冷凍庫にあるので/);
-  assert.match(prompt, /・玉ねぎ：2個/);
+  assert.match(prompt, /・玉ねぎ：2/);
+  assert.doesNotMatch(prompt, /2回/);
   assert.doesNotMatch(prompt, /牛乳/);
 });
