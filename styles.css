@@ -74,7 +74,7 @@ h2 { margin: 0; font-size: 1.1rem; }
 .pantry-title-row { align-items: flex-start; }
 .section-help { margin: 5px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
 .add-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 16px 0; }
-.add-form input, .quantity-input, .unit-select, .custom-unit-input {
+.add-form input, .quantity-input, .unit-select {
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -83,7 +83,7 @@ h2 { margin: 0; font-size: 1.1rem; }
   color: var(--text);
 }
 .add-form input { width: 100%; padding: 0 13px; }
-.add-form input:focus, .quantity-input:focus, .unit-select:focus, .custom-unit-input:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(85, 230, 174, .13); }
+.add-form input:focus, .quantity-input:focus, .unit-select:focus:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(85, 230, 174, .13); }
 .add-button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--mint); color: #062019; font-weight: 900; }
 
 .ingredient-list { display: grid; gap: 10px; }
@@ -97,12 +97,12 @@ h2 { margin: 0; font-size: 1.1rem; }
 [data-state="optional"] .state-label { background: var(--mint); color: #07231b; }
 [data-state="required"] .state-label { background: var(--red); color: #2d0b07; }
 .card-controls { display: grid; grid-template-columns: minmax(64px, 1fr) minmax(86px, auto) 48px 44px; gap: 7px; padding: 0 10px 10px; }
-.quantity-input, .unit-select, .custom-unit-input { width: 100%; padding: 0 9px; }
+.quantity-input, .unit-select { width: 100%; padding: 0 9px; }
 .quantity-input { min-width: 0; }
+.quantity-input:disabled { opacity: .62; cursor: not-allowed; }
 .frozen-button, .delete-button { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #0b201b; color: var(--muted); }
 .frozen-button[aria-pressed="true"] { border-color: #83d8ff; background: #164866; color: white; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
 .delete-button { color: #d5aaa3; }
-.custom-unit-input { grid-column: 2 / 3; min-height: 40px; }
 
 .empty-state { padding: 26px 12px 18px; text-align: center; color: var(--muted); }
 .empty-state[hidden] { display: none; }
