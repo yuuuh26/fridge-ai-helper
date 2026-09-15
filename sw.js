@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fridge-ai-helper-shell-v3';
+const CACHE_NAME = 'fridge-ai-helper-shell-v4';
 const APP_SHELL = [
   './',
   './index.html',
