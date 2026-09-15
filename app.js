@@ -26,6 +26,7 @@ const elements = {
 let ingredients = [];
 let pendingDeleteId = null;
 let toastTimer;
+const customUnitIds = new Set();
 
 function createId() {
   return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -76,7 +77,7 @@ function createUnitSelect(item) {
   const select = document.createElement('select');
   select.className = 'unit-select';
   select.setAttribute('aria-label', `${item.name}の単位`);
-  const isKnownUnit = UNITS.slice(0, -1).includes(item.unit);
+  const isKnownUnit = UNITS.slice(0, -1).includes(item.unit) && !customUnitIds.has(item.id);
 
   UNITS.forEach(unit => {
     const option = document.createElement('option');
@@ -253,23 +254,14 @@ elements.list.addEventListener('change', async event => {
 
   if (event.target.matches('.unit-select')) {
     if (event.target.value === '__custom__') {
+      customUnitIds.add(item.id);
       await persistChange(item.id, { unit: '' });
       requestAnimationFrame(() => {
         const updatedCard = elements.list.querySelector(`[data-id="${CSS.escape(item.id)}"]`);
-        const select = updatedCard?.querySelector('.unit-select');
-        if (select) select.value = '__custom__';
-        if (updatedCard && !updatedCard.querySelector('.custom-unit-input')) {
-          const customUnit = document.createElement('input');
-          customUnit.className = 'custom-unit-input';
-          customUnit.type = 'text';
-          customUnit.maxLength = 10;
-          customUnit.placeholder = '単位を入力';
-          customUnit.setAttribute('aria-label', `${item.name}の自由入力単位`);
-          updatedCard.querySelector('.card-controls')?.append(customUnit);
-          customUnit.focus();
-        }
+        updatedCard?.querySelector('.custom-unit-input')?.focus();
       });
     } else {
+      customUnitIds.delete(item.id);
       await persistChange(item.id, { unit: event.target.value });
     }
   }
@@ -300,6 +292,7 @@ elements.deleteDialog.addEventListener('close', async () => {
   const item = ingredients.find(candidate => candidate.id === pendingDeleteId);
   try {
     await removeIngredient(pendingDeleteId);
+    customUnitIds.delete(pendingDeleteId);
     ingredients = ingredients.filter(candidate => candidate.id !== pendingDeleteId);
     render();
     showToast(`✓ 「${item?.name || '食材'}」を削除しました`);
