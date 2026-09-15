@@ -54,7 +54,13 @@ h1 { margin: 0; font-size: clamp(1.75rem, 7vw, 2.4rem); line-height: 1.15; lette
 
 section, .settings-card { border: 1px solid var(--line); border-radius: 22px; background: rgba(16, 41, 35, .92); box-shadow: var(--shadow); }
 section { padding: 18px; }
-.pantry { margin-top: 16px; }
+.pantry, .constant-pantry { margin-top: 16px; }
+.constant-pantry {
+  background: rgba(13, 32, 28, .78);
+  border-style: dashed;
+}
+.constant-ingredient-list { margin-top: 14px; }
+.constant-pantry .ingredient-card { background: #0b201b; }
 .section-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 h2 { margin: 0; font-size: 1.1rem; }
 .count-badge { min-width: 46px; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--mint); text-align: center; font-weight: 800; font-size: .8rem; }
