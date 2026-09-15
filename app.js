@@ -2,7 +2,7 @@ import { getAllIngredients, removeIngredient, saveIngredient } from './db.js';
 import { generateAiPrompt, nextSelectionState, normalizeIngredientName } from './utils.js';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
-const UNITS = ['', '個', '本', '枚', '袋', 'パック', '玉', '束', 'g', 'kg', 'ml', 'L', '__custom__'];
+const STOCK_MODES = ['回', '常時'];
 const stateLabels = { none: '未選択', optional: '使ってもOK', required: '必ず使う' };
 const stateIcons = { none: '○', optional: '●', required: '●' };
 
@@ -26,7 +26,6 @@ const elements = {
 let ingredients = [];
 let pendingDeleteId = null;
 let toastTimer;
-const customUnitIds = new Set();
 
 function createId() {
   return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -41,8 +40,10 @@ function showToast(message, type = 'success') {
 }
 
 function ingredientSummary(item) {
-  const amount = item.quantity ? ` ${item.quantity}${item.unit || ''}` : '';
-  return `${item.name}${amount}${item.isFrozen ? ' ❄️' : ''}`;
+  const stock = item.unit === '常時'
+    ? ' 常時'
+    : item.quantity ? ` ${item.quantity}回` : '';
+  return `${item.name}${stock}${item.isFrozen ? ' ❄️' : ''}`;
 }
 
 function renderSummary(target, items) {
@@ -76,17 +77,17 @@ function renderSelectionBoard() {
 function createUnitSelect(item) {
   const select = document.createElement('select');
   select.className = 'unit-select';
-  select.setAttribute('aria-label', `${item.name}の単位`);
-  const isKnownUnit = UNITS.slice(0, -1).includes(item.unit) && !customUnitIds.has(item.id);
+  select.setAttribute('aria-label', `${item.name}の在庫管理方法`);
+  const currentMode = item.unit === '常時' ? '常時' : '回';
 
-  UNITS.forEach(unit => {
+  STOCK_MODES.forEach(mode => {
     const option = document.createElement('option');
-    option.value = unit;
-    option.textContent = unit === '' ? '単位なし' : unit === '__custom__' ? '自由入力…' : unit;
-    option.selected = unit === (isKnownUnit ? item.unit : '__custom__');
+    option.value = mode;
+    option.textContent = mode;
+    option.selected = mode === currentMode;
     select.append(option);
   });
-  return { select, isCustom: !isKnownUnit };
+  return select;
 }
 
 function createIngredientCard(item) {
@@ -111,16 +112,20 @@ function createIngredientCard(item) {
   const controls = document.createElement('div');
   controls.className = 'card-controls';
 
+  const stockMode = item.unit === '常時' ? '常時' : '回';
+
   const quantity = document.createElement('input');
   quantity.className = 'quantity-input';
-  quantity.type = 'text';
-  quantity.inputMode = 'decimal';
-  quantity.maxLength = 12;
-  quantity.placeholder = '残量';
-  quantity.value = item.quantity || '';
-  quantity.setAttribute('aria-label', `${item.name}の残量`);
+  quantity.type = 'number';
+  quantity.inputMode = 'numeric';
+  quantity.min = '0';
+  quantity.step = '1';
+  quantity.placeholder = stockMode === '常時' ? '常時' : '残り回数';
+  quantity.value = stockMode === '常時' ? '' : (item.quantity || '');
+  quantity.disabled = stockMode === '常時';
+  quantity.setAttribute('aria-label', `${item.name}の残り使用回数`);
 
-  const { select: unitSelect, isCustom } = createUnitSelect(item);
+  const unitSelect = createUnitSelect(item);
 
   const frozen = document.createElement('button');
   frozen.type = 'button';
@@ -138,17 +143,6 @@ function createIngredientCard(item) {
   remove.setAttribute('aria-label', `${item.name}を削除`);
 
   controls.append(quantity, unitSelect, frozen, remove);
-
-  if (isCustom) {
-    const customUnit = document.createElement('input');
-    customUnit.className = 'custom-unit-input';
-    customUnit.type = 'text';
-    customUnit.maxLength = 10;
-    customUnit.placeholder = '単位を入力';
-    customUnit.value = item.unit;
-    customUnit.setAttribute('aria-label', `${item.name}の自由入力単位`);
-    controls.append(customUnit);
-  }
 
   card.append(mainButton, controls);
   return card;
@@ -201,7 +195,7 @@ elements.addForm.addEventListener('submit', async event => {
     normalizedName,
     selectionState: 'none',
     quantity: '',
-    unit: '',
+    unit: '回',
     isFrozen: false,
     createdAt: now,
     updatedAt: now
@@ -253,34 +247,20 @@ elements.list.addEventListener('change', async event => {
   }
 
   if (event.target.matches('.unit-select')) {
-    if (event.target.value === '__custom__') {
-      customUnitIds.add(item.id);
-      await persistChange(item.id, { unit: '' });
-      requestAnimationFrame(() => {
-        const updatedCard = elements.list.querySelector(`[data-id="${CSS.escape(item.id)}"]`);
-        updatedCard?.querySelector('.custom-unit-input')?.focus();
-      });
-    } else {
-      customUnitIds.delete(item.id);
-      await persistChange(item.id, { unit: event.target.value });
-    }
-  }
-
-  if (event.target.matches('.custom-unit-input')) {
-    await persistChange(item.id, { unit: event.target.value.trim() });
+    const unit = event.target.value === '常時' ? '常時' : '回';
+    const changes = unit === '常時'
+      ? { unit, quantity: '' }
+      : { unit };
+    await persistChange(item.id, changes);
   }
 });
 
 elements.list.addEventListener('focusout', async event => {
-  if (!event.target.matches('.quantity-input, .custom-unit-input')) return;
-  if (event.target.dataset.saved === event.target.value) return;
+  if (!event.target.matches('.quantity-input')) return;
   const card = event.target.closest('.ingredient-card');
   const item = ingredients.find(candidate => candidate.id === card?.dataset.id);
   if (!item) return;
-  const changes = event.target.matches('.quantity-input')
-    ? { quantity: event.target.value.trim() }
-    : { unit: event.target.value.trim() };
-  await persistChange(item.id, changes);
+  await persistChange(item.id, { quantity: event.target.value.trim() });
 });
 
 elements.deleteDialog.addEventListener('close', async () => {
@@ -292,7 +272,6 @@ elements.deleteDialog.addEventListener('close', async () => {
   const item = ingredients.find(candidate => candidate.id === pendingDeleteId);
   try {
     await removeIngredient(pendingDeleteId);
-    customUnitIds.delete(pendingDeleteId);
     ingredients = ingredients.filter(candidate => candidate.id !== pendingDeleteId);
     render();
     showToast(`✓ 「${item?.name || '食材'}」を削除しました`);
