@@ -74,7 +74,9 @@ h2 { margin: 0; font-size: 1.1rem; }
 .required-dot { color: var(--red); background: var(--red); }
 .optional-dot { color: var(--mint); background: var(--mint); }
 .summary-list { display: flex; flex-wrap: wrap; gap: 7px; min-height: 29px; margin-top: 10px; }
-.summary-chip { padding: 5px 9px; border-radius: 999px; background: rgba(255,255,255,.07); font-size: .8rem; }
+.summary-chip { padding: 5px 9px; border: 0; border-radius: 999px; background: rgba(255,255,255,.07); color: inherit; font: inherit; font-size: .8rem; }
+.summary-chip-action { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; transition: transform .12s ease, background .12s ease; }
+.summary-chip-action.is-pressing { background: rgba(255,255,255,.16); transform: scale(.96); }
 .empty-note { margin: 4px 0 0; color: var(--muted); font-size: .8rem; }
 
 .pantry-title-row { align-items: flex-start; }
