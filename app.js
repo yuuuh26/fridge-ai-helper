@@ -23,12 +23,17 @@ const elements = {
   toast: document.querySelector('#toast'),
   deleteDialog: document.querySelector('#delete-dialog'),
   deleteMessage: document.querySelector('#delete-message'),
-  storageStatus: document.querySelector('#storage-status')
+  storageStatus: document.querySelector('#storage-status'),
+  selectionBoard: document.querySelector('.selection-board')
 };
 
 let ingredients = [];
 let pendingDeleteId = null;
 let toastTimer;
+let summaryPressTimer = null;
+let summaryPressChip = null;
+let summaryPressStart = null;
+const SUMMARY_LONG_PRESS_MS = 550;
 
 function createId() {
   return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -62,9 +67,13 @@ function renderSummary(target, items) {
 
   const fragment = document.createDocumentFragment();
   items.forEach(item => {
-    const chip = document.createElement('span');
-    chip.className = 'summary-chip';
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'summary-chip summary-chip-action';
+    chip.dataset.id = item.id;
     chip.textContent = ingredientSummary(item);
+    chip.title = '長押しで選択解除';
+    chip.setAttribute('aria-label', `${item.name}。長押しで選択解除`);
     fragment.append(chip);
   });
   target.append(fragment);
@@ -77,6 +86,63 @@ function renderSelectionBoard() {
   renderSummary(elements.optionalSummary, optional);
   elements.selectedCount.textContent = `${required.length + optional.length}品`;
 }
+
+function clearSummaryLongPress() {
+  if (summaryPressTimer) {
+    clearTimeout(summaryPressTimer);
+    summaryPressTimer = null;
+  }
+  summaryPressChip?.classList.remove('is-pressing');
+  summaryPressChip = null;
+  summaryPressStart = null;
+}
+
+elements.selectionBoard.addEventListener('pointerdown', event => {
+  const chip = event.target.closest('.summary-chip-action');
+  if (!chip || (event.pointerType !== 'touch' && event.button !== 0)) return;
+
+  clearSummaryLongPress();
+  summaryPressChip = chip;
+  summaryPressStart = { x: event.clientX, y: event.clientY };
+  chip.classList.add('is-pressing');
+
+  try {
+    chip.setPointerCapture?.(event.pointerId);
+  } catch {
+    // Pointer capture is optional; long press still works without it.
+  }
+
+  const id = chip.dataset.id;
+  summaryPressTimer = setTimeout(async () => {
+    const item = ingredients.find(candidate => candidate.id === id);
+    if (!item || item.selectionState === 'none') {
+      clearSummaryLongPress();
+      return;
+    }
+
+    clearSummaryLongPress();
+    navigator.vibrate?.(20);
+    const saved = await persistChange(item.id, { selectionState: 'none' });
+    if (saved) showToast(`✓ 「${item.name}」の選択を解除しました`);
+  }, SUMMARY_LONG_PRESS_MS);
+});
+
+elements.selectionBoard.addEventListener('pointermove', event => {
+  if (!summaryPressStart || !summaryPressChip) return;
+  const distance = Math.hypot(
+    event.clientX - summaryPressStart.x,
+    event.clientY - summaryPressStart.y
+  );
+  if (distance > 10) clearSummaryLongPress();
+});
+
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
+  elements.selectionBoard.addEventListener(type, clearSummaryLongPress);
+});
+
+elements.selectionBoard.addEventListener('contextmenu', event => {
+  if (event.target.closest('.summary-chip-action')) event.preventDefault();
+});
 
 function createUnitSelect(item) {
   const select = document.createElement('select');
