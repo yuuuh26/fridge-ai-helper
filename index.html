@@ -62,6 +62,13 @@
       <form id="add-form" class="add-form" autocomplete="off">
         <label class="sr-only" for="ingredient-name">追加する食材名</label>
         <input id="ingredient-name" name="ingredientName" type="text" maxlength="40" placeholder="例：玉ねぎ" required>
+        <label class="sr-only" for="ingredient-category">食材カテゴリ</label>
+        <select id="ingredient-category" name="ingredientCategory" class="category-add-select" aria-label="食材カテゴリ">
+          <option value="meat">肉</option>
+          <option value="fish">魚</option>
+          <option value="tofu">豆腐</option>
+          <option value="vegetable" selected>野菜</option>
+        </select>
         <button type="submit" class="add-button">＋ 食材を追加</button>
       </form>
 
