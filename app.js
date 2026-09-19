@@ -1,4 +1,4 @@
-import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=8';
+import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=9';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -7,7 +7,7 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=8';
+} from './utils.js?v=9';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
 const STOCK_MODES = ['回分', '常時'];
@@ -276,7 +276,11 @@ function renderCategorizedIngredientList(target, items) {
   INGREDIENT_CATEGORIES.forEach(category => {
     const categoryItems = sortIngredientsByCategory(
       items.filter(item => ingredientCategory(item) === category)
-    );
+    ).sort((a, b) => {
+      const aUnselected = a.selectionState === 'none' ? 1 : 0;
+      const bUnselected = b.selectionState === 'none' ? 1 : 0;
+      return aUnselected - bUnselected;
+    });
     if (!categoryItems.length) return;
 
     const group = document.createElement('div');
@@ -537,7 +541,7 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=8', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=9', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }
