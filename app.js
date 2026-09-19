@@ -240,6 +240,15 @@ function createIngredientCard(item) {
   const unitSelect = createUnitSelect(item);
   const categorySelect = createCategorySelect(item);
 
+  const categoryEditor = document.createElement('label');
+  categoryEditor.className = 'category-editor';
+
+  const categoryLabel = document.createElement('span');
+  categoryLabel.className = 'category-editor-label';
+  categoryLabel.textContent = '分類';
+
+  categoryEditor.append(categoryLabel, categorySelect);
+
   const frozen = document.createElement('button');
   frozen.type = 'button';
   frozen.className = 'frozen-button';
@@ -255,7 +264,7 @@ function createIngredientCard(item) {
   remove.title = '食材を削除';
   remove.setAttribute('aria-label', `${item.name}を削除`);
 
-  controls.append(quantity, unitSelect, categorySelect, frozen, remove);
+  controls.append(quantity, unitSelect, frozen, remove, categoryEditor);
 
   card.append(mainButton, controls);
   return card;
@@ -500,10 +509,24 @@ async function setupPersistentStorage() {
   }
 }
 
+async function persistLegacyCategories() {
+  const legacyItems = ingredients.filter(item => !INGREDIENT_CATEGORIES.includes(item.category));
+  if (!legacyItems.length) return;
+
+  await Promise.all(legacyItems.map(async item => {
+    const category = ingredientCategory(item);
+    const updated = { ...item, category, updatedAt: new Date().toISOString() };
+    await saveIngredient(updated);
+    const index = ingredients.findIndex(candidate => candidate.id === item.id);
+    if (index >= 0) ingredients[index] = updated;
+  }));
+}
+
 async function init() {
   elements.appUrl.textContent = PUBLIC_URL;
   try {
     ingredients = await getAllIngredients();
+    await persistLegacyCategories();
     render();
   } catch (error) {
     console.error(error);
