@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=8">
 </head>
 <body>
   <main class="app-shell">
@@ -62,13 +62,15 @@
       <form id="add-form" class="add-form" autocomplete="off">
         <label class="sr-only" for="ingredient-name">追加する食材名</label>
         <input id="ingredient-name" name="ingredientName" type="text" maxlength="40" placeholder="例：玉ねぎ" required>
-        <label class="sr-only" for="ingredient-category">食材カテゴリ</label>
-        <select id="ingredient-category" name="ingredientCategory" class="category-add-select" aria-label="食材カテゴリ">
-          <option value="meat">肉</option>
-          <option value="fish">魚</option>
-          <option value="tofu">豆腐</option>
-          <option value="vegetable" selected>野菜</option>
-        </select>
+        <label class="category-add-field" for="ingredient-category">
+          <span class="category-add-label">分類</span>
+          <select id="ingredient-category" name="ingredientCategory" class="category-add-select" aria-label="食材カテゴリ">
+            <option value="meat">🥩 肉</option>
+            <option value="fish">🐟 魚</option>
+            <option value="tofu">□ 豆腐</option>
+            <option value="vegetable" selected>🥬 野菜</option>
+          </select>
+        </label>
         <button type="submit" class="add-button">＋ 食材を追加</button>
       </form>
 
@@ -131,6 +133,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=8"></script>
 </body>
 </html>
