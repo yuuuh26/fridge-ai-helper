@@ -49,8 +49,8 @@ export function nextSelectionState(currentState) {
 }
 
 export function formatIngredient(ingredient) {
-  const frozenState = ingredient.isFrozen ? '冷凍中' : '非冷凍';
-  return `・${ingredient.name}（${frozenState}）`;
+  const frozenState = ingredient.isFrozen ? '［冷凍中］' : '［非冷凍］';
+  return `・${ingredient.name} ${frozenState}`;
 }
 
 export function generateAiPrompt(ingredients) {
@@ -61,7 +61,10 @@ export function generateAiPrompt(ingredients) {
 
   const required = selected.filter(item => item.selectionState === 'required');
   const optional = selected.filter(item => item.selectionState === 'optional');
-  const sections = ['料理を考えてください。'];
+  const sections = [
+    '料理を考えてください。',
+    '※各食材の末尾に、保存状態を［冷凍中］または［非冷凍］で記載しています。'
+  ];
 
   if (required.length) {
     sections.push(`【絶対に使ってほしい食材】\n\n${required.map(formatIngredient).join('\n')}`);
