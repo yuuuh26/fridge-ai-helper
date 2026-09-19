@@ -111,9 +111,12 @@ h2 { margin: 0; font-size: 1.1rem; }
 .state-label { padding: 5px 8px; border-radius: 999px; background: rgba(255,255,255,.07); color: var(--muted); font-size: .72rem; font-weight: 800; white-space: nowrap; }
 [data-state="optional"] .state-label { background: var(--mint); color: #07231b; }
 [data-state="required"] .state-label { background: var(--red); color: #2d0b07; }
-.card-controls { display: grid; grid-template-columns: minmax(58px, .8fr) minmax(80px, .9fr) minmax(72px, .9fr) 48px 44px; gap: 7px; padding: 0 10px 10px; }
+.card-controls { display: grid; grid-template-columns: minmax(58px, 1fr) minmax(80px, 1fr) 48px 44px; gap: 7px; padding: 0 10px 10px; }
 .quantity-input, .unit-select, .category-select { width: 100%; padding: 0 8px; }
 .quantity-input { min-width: 0; }
+.category-editor { grid-column: 1 / -1; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 9px; min-height: 44px; padding: 6px 8px 6px 11px; border: 1px solid rgba(167, 194, 185, .18); border-radius: 12px; background: rgba(255,255,255,.025); }
+.category-editor-label { color: var(--muted); font-size: .78rem; font-weight: 850; letter-spacing: .04em; }
+.category-editor .category-select { min-height: 36px; background: #0b201b; }
 .quantity-input:disabled { opacity: .62; cursor: not-allowed; }
 .frozen-button, .delete-button { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #0b201b; color: var(--muted); }
 .frozen-button[aria-pressed="true"] { border-color: #83d8ff; background: #164866; color: white; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
@@ -163,8 +166,9 @@ h2 { margin: 0; font-size: 1.1rem; }
   .add-form input { grid-column: 1 / -1; }
   .category-add-select { min-width: 104px; }
   .add-button { width: 100%; }
-  .card-controls { grid-template-columns: minmax(52px, .8fr) minmax(68px, .9fr) minmax(64px, .9fr) 43px 39px; gap: 4px; padding-inline: 7px; }
-  .quantity-input, .unit-select, .category-select { padding-inline: 5px; font-size: .8rem; }
+  .card-controls { grid-template-columns: minmax(52px, 1fr) minmax(68px, 1fr) 43px 39px; gap: 5px; padding-inline: 7px; }
+  .quantity-input, .unit-select, .category-select { padding-inline: 6px; font-size: .84rem; }
+  .category-editor { gap: 7px; padding-left: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
