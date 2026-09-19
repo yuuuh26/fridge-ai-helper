@@ -1,4 +1,4 @@
-import { getAllIngredients, removeIngredient, saveIngredient } from './db.js';
+import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=8';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -7,7 +7,7 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js';
+} from './utils.js?v=8';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
 const STOCK_MODES = ['回分', '常時'];
@@ -537,7 +537,7 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=8', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }
