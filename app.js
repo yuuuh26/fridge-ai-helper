@@ -1,5 +1,13 @@
 import { getAllIngredients, removeIngredient, saveIngredient } from './db.js';
-import { generateAiPrompt, nextSelectionState, normalizeIngredientName } from './utils.js';
+import {
+  generateAiPrompt,
+  INGREDIENT_CATEGORIES,
+  INGREDIENT_CATEGORY_LABELS,
+  ingredientCategory,
+  nextSelectionState,
+  normalizeIngredientName,
+  sortIngredientsByCategory
+} from './utils.js';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
 const STOCK_MODES = ['回分', '常時'];
@@ -9,6 +17,7 @@ const stateIcons = { none: '○', optional: '●', required: '●' };
 const elements = {
   addForm: document.querySelector('#add-form'),
   nameInput: document.querySelector('#ingredient-name'),
+  categoryInput: document.querySelector('#ingredient-category'),
   list: document.querySelector('#ingredient-list'),
   constantList: document.querySelector('#constant-ingredient-list'),
   constantSection: document.querySelector('#constant-pantry'),
@@ -80,8 +89,12 @@ function renderSummary(target, items) {
 }
 
 function renderSelectionBoard() {
-  const required = ingredients.filter(item => item.selectionState === 'required');
-  const optional = ingredients.filter(item => item.selectionState === 'optional');
+  const required = sortIngredientsByCategory(
+    ingredients.filter(item => item.selectionState === 'required')
+  );
+  const optional = sortIngredientsByCategory(
+    ingredients.filter(item => item.selectionState === 'optional')
+  );
   renderSummary(elements.requiredSummary, required);
   renderSummary(elements.optionalSummary, optional);
   elements.selectedCount.textContent = `${required.length + optional.length}品`;
@@ -160,6 +173,23 @@ function createUnitSelect(item) {
   return select;
 }
 
+function createCategorySelect(item) {
+  const select = document.createElement('select');
+  select.className = 'category-select';
+  select.setAttribute('aria-label', `${item.name}のカテゴリ`);
+  const currentCategory = ingredientCategory(item);
+
+  INGREDIENT_CATEGORIES.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = INGREDIENT_CATEGORY_LABELS[category];
+    option.selected = category === currentCategory;
+    select.append(option);
+  });
+
+  return select;
+}
+
 function createIngredientCard(item) {
   const card = document.createElement('article');
   card.className = 'ingredient-card';
@@ -208,6 +238,7 @@ function createIngredientCard(item) {
   });
 
   const unitSelect = createUnitSelect(item);
+  const categorySelect = createCategorySelect(item);
 
   const frozen = document.createElement('button');
   frozen.type = 'button';
@@ -224,22 +255,56 @@ function createIngredientCard(item) {
   remove.title = '食材を削除';
   remove.setAttribute('aria-label', `${item.name}を削除`);
 
-  controls.append(quantity, unitSelect, frozen, remove);
+  controls.append(quantity, unitSelect, categorySelect, frozen, remove);
 
   card.append(mainButton, controls);
   return card;
+}
+
+function renderCategorizedIngredientList(target, items) {
+  const fragment = document.createDocumentFragment();
+
+  INGREDIENT_CATEGORIES.forEach(category => {
+    const categoryItems = sortIngredientsByCategory(
+      items.filter(item => ingredientCategory(item) === category)
+    );
+    if (!categoryItems.length) return;
+
+    const group = document.createElement('div');
+    group.className = 'ingredient-category-group';
+    group.dataset.category = category;
+
+    const heading = document.createElement('div');
+    heading.className = 'ingredient-category-heading';
+
+    const title = document.createElement('h3');
+    title.textContent = INGREDIENT_CATEGORY_LABELS[category];
+
+    const count = document.createElement('span');
+    count.className = 'category-count';
+    count.textContent = `${categoryItems.length}品`;
+
+    const cardList = document.createElement('div');
+    cardList.className = 'category-ingredient-list';
+    categoryItems.forEach(item => cardList.append(createIngredientCard(item)));
+
+    heading.append(title, count);
+    group.append(heading, cardList);
+    fragment.append(group);
+  });
+
+  target.replaceChildren(fragment);
 }
 
 function render() {
   const regularItems = ingredients.filter(item => item.unit !== '常時');
   const constantItems = ingredients.filter(item => item.unit === '常時');
 
-  const regularFragment = document.createDocumentFragment();
-  regularItems.forEach(item => regularFragment.append(createIngredientCard(item)));
-  elements.list.replaceChildren(regularFragment);
+  renderCategorizedIngredientList(elements.list, regularItems);
 
   const constantFragment = document.createDocumentFragment();
-  constantItems.forEach(item => constantFragment.append(createIngredientCard(item)));
+  sortIngredientsByCategory(constantItems)
+    .forEach(item => constantFragment.append(createIngredientCard(item)));
   elements.constantList.replaceChildren(constantFragment);
 
   elements.emptyState.hidden = regularItems.length > 0;
@@ -274,6 +339,9 @@ elements.addForm.addEventListener('submit', async event => {
   const name = elements.nameInput.value.trim().replace(/\s+/g, ' ');
   if (!name) return;
   const normalizedName = normalizeIngredientName(name);
+  const category = INGREDIENT_CATEGORIES.includes(elements.categoryInput.value)
+    ? elements.categoryInput.value
+    : 'vegetable';
 
   if (ingredients.some(item => item.normalizedName === normalizedName)) {
     showToast('⚠️ 同じ名前の食材が登録されています', 'error');
@@ -287,6 +355,7 @@ elements.addForm.addEventListener('submit', async event => {
     name,
     normalizedName,
     selectionState: 'none',
+    category,
     quantity: '',
     unit: '回分',
     isFrozen: false,
@@ -345,6 +414,13 @@ document.querySelector('.app-shell').addEventListener('change', async event => {
       ? { unit, quantity: '' }
       : { unit };
     await persistChange(item.id, changes);
+  }
+
+  if (event.target.matches('.category-select')) {
+    const category = INGREDIENT_CATEGORIES.includes(event.target.value)
+      ? event.target.value
+      : ingredientCategory(item);
+    await persistChange(item.id, { category });
   }
 });
 
