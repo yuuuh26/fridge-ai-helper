@@ -81,8 +81,8 @@ h2 { margin: 0; font-size: 1.1rem; }
 
 .pantry-title-row { align-items: flex-start; }
 .section-help { margin: 5px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
-.add-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 16px 0; }
-.add-form input, .quantity-input, .unit-select {
+.add-form { display: grid; grid-template-columns: minmax(0, 1fr) 92px auto; gap: 8px; margin: 16px 0; }
+.add-form input, .quantity-input, .unit-select, .category-select, .category-add-select {
   min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -91,10 +91,17 @@ h2 { margin: 0; font-size: 1.1rem; }
   color: var(--text);
 }
 .add-form input { width: 100%; padding: 0 13px; }
-.add-form input:focus, .quantity-input:focus, .unit-select:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(85, 230, 174, .13); }
+.add-form input:focus, .quantity-input:focus, .unit-select:focus, .category-select:focus, .category-add-select:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(85, 230, 174, .13); }
+.category-add-select { width: 100%; padding: 0 9px; }
 .add-button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--mint); color: #062019; font-weight: 900; }
 
 .ingredient-list { display: grid; gap: 10px; }
+.ingredient-category-group { display: grid; gap: 8px; }
+.ingredient-category-group + .ingredient-category-group { margin-top: 12px; }
+.ingredient-category-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 4px 2px; border-bottom: 1px solid rgba(167, 194, 185, .14); }
+.ingredient-category-heading h3 { margin: 0; color: var(--text); font-size: .92rem; }
+.category-count { color: var(--muted); font-size: .74rem; font-weight: 800; }
+.category-ingredient-list { display: grid; gap: 10px; }
 .ingredient-card { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 17px; background: #0d241f; transition: background .15s ease, border-color .15s ease, transform .12s ease; }
 .ingredient-card[data-state="optional"] { border-color: var(--mint); background: var(--mint-dark); }
 .ingredient-card[data-state="required"] { border-color: var(--red); background: var(--red-dark); }
@@ -104,8 +111,8 @@ h2 { margin: 0; font-size: 1.1rem; }
 .state-label { padding: 5px 8px; border-radius: 999px; background: rgba(255,255,255,.07); color: var(--muted); font-size: .72rem; font-weight: 800; white-space: nowrap; }
 [data-state="optional"] .state-label { background: var(--mint); color: #07231b; }
 [data-state="required"] .state-label { background: var(--red); color: #2d0b07; }
-.card-controls { display: grid; grid-template-columns: minmax(64px, 1fr) minmax(86px, auto) 48px 44px; gap: 7px; padding: 0 10px 10px; }
-.quantity-input, .unit-select { width: 100%; padding: 0 9px; }
+.card-controls { display: grid; grid-template-columns: minmax(58px, .8fr) minmax(80px, .9fr) minmax(72px, .9fr) 48px 44px; gap: 7px; padding: 0 10px 10px; }
+.quantity-input, .unit-select, .category-select { width: 100%; padding: 0 8px; }
 .quantity-input { min-width: 0; }
 .quantity-input:disabled { opacity: .62; cursor: not-allowed; }
 .frozen-button, .delete-button { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #0b201b; color: var(--muted); }
@@ -152,10 +159,12 @@ h2 { margin: 0; font-size: 1.1rem; }
 @media (max-width: 430px) {
   .app-shell { padding-inline: 12px; }
   section { padding: 15px; }
-  .add-form { grid-template-columns: 1fr; }
+  .add-form { grid-template-columns: minmax(0, 1fr) auto; }
+  .add-form input { grid-column: 1 / -1; }
+  .category-add-select { min-width: 104px; }
   .add-button { width: 100%; }
-  .card-controls { grid-template-columns: minmax(58px, 1fr) minmax(78px, .9fr) 46px 42px; gap: 5px; padding-inline: 8px; }
-  .quantity-input, .unit-select { padding-inline: 7px; font-size: .88rem; }
+  .card-controls { grid-template-columns: minmax(52px, .8fr) minmax(68px, .9fr) minmax(64px, .9fr) 43px 39px; gap: 4px; padding-inline: 7px; }
+  .quantity-input, .unit-select, .category-select { padding-inline: 5px; font-size: .8rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
