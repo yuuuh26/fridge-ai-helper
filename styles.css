@@ -81,7 +81,7 @@ h2 { margin: 0; font-size: 1.1rem; }
 
 .pantry-title-row { align-items: flex-start; }
 .section-help { margin: 5px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
-.add-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(140px, 170px) auto; gap: 8px; margin: 16px 0; }
+.add-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(126px, 150px) auto; gap: 8px; margin: 16px 0; }
 .add-form input, .quantity-input, .unit-select, .category-select, .category-add-select {
   min-height: 44px;
   border: 1px solid var(--line);
@@ -92,9 +92,9 @@ h2 { margin: 0; font-size: 1.1rem; }
 }
 .add-form input { width: 100%; padding: 0 13px; }
 .add-form input:focus, .quantity-input:focus, .unit-select:focus, .category-select:focus, .category-add-select:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(85, 230, 174, .13); }
-.category-add-field { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; min-height: 54px; padding: 5px 7px 5px 11px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.035); }
-.category-add-label { color: var(--muted); font-size: .82rem; font-weight: 900; }
-.category-add-select { width: 100%; min-height: 44px; padding: 0 10px; border-radius: 11px; font-size: 1rem; font-weight: 900; }
+.category-add-field { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px; min-height: 48px; padding: 4px 6px 4px 10px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.035); }
+.category-add-label { color: var(--muted); font-size: .78rem; font-weight: 700; }
+.category-add-select { width: 100%; min-height: 40px; padding: 0 9px; border-radius: 10px; font-size: .95rem; font-weight: 400; }
 .add-button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--mint); color: #062019; font-weight: 900; }
 
 .ingredient-list { display: grid; gap: 10px; }
@@ -166,9 +166,9 @@ h2 { margin: 0; font-size: 1.1rem; }
   section { padding: 15px; }
   .add-form { grid-template-columns: minmax(0, 1fr); }
   .add-form input { grid-column: 1; min-height: 50px; }
-  .category-add-field { grid-column: 1; min-height: 58px; }
-  .category-add-select { min-width: 0; min-height: 46px; font-size: 1.05rem; }
-  .add-button { width: 100%; min-height: 50px; }
+  .category-add-field { grid-column: 1; min-height: 50px; }
+  .category-add-select { min-width: 0; min-height: 40px; font-size: .96rem; font-weight: 400; }
+  .add-button { width: 100%; min-height: 48px; }
   .card-controls { grid-template-columns: minmax(52px, 1fr) minmax(68px, 1fr) 43px 39px; gap: 5px; padding-inline: 7px; }
   .quantity-input, .unit-select, .category-select { padding-inline: 6px; font-size: .84rem; }
   .category-editor { gap: 7px; padding-left: 10px; }
