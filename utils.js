@@ -1,4 +1,4 @@
-export const SELECTION_STATES = Object.freeze(['none', 'optional', 'required']);
+export const SELECTION_STATES = Object.freeze(['optional', 'none', 'required']);
 
 export const INGREDIENT_CATEGORIES = Object.freeze(['meat', 'fish', 'tofu', 'vegetable']);
 export const INGREDIENT_CATEGORY_LABELS = Object.freeze({
@@ -53,7 +53,7 @@ export function formatIngredient(ingredient) {
   return `・${ingredient.name} ${frozenState}`;
 }
 
-export function generateAiPrompt(ingredients) {
+export function generateAiPrompt(ingredients, mainSeasonings = '') {
   const selected = sortIngredientsByCategory(
     ingredients.filter(item => item.selectionState !== 'none')
   );
@@ -61,10 +61,15 @@ export function generateAiPrompt(ingredients) {
 
   const required = selected.filter(item => item.selectionState === 'required');
   const optional = selected.filter(item => item.selectionState === 'optional');
+  const seasoningText = String(mainSeasonings || '').trim();
   const sections = [
     '料理を考えてください。',
     '※各食材の末尾に、保存状態を［冷凍中］または［非冷凍］で記載しています。'
   ];
+
+  if (seasoningText) {
+    sections.push(`【メインで使ってほしい調味料】\n\n${seasoningText}\n\nこの調味料を味付けの中心として優先的に使用してください。`);
+  }
 
   if (required.length) {
     sections.push(`【絶対に使ってほしい食材】\n\n${required.map(formatIngredient).join('\n')}`);
