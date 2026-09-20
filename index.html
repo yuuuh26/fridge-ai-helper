@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=11">
+  <link rel="stylesheet" href="./styles.css?v=12">
 </head>
 <body>
   <main class="app-shell">
@@ -51,15 +51,24 @@
       </div>
 
       <div class="seasoning-group">
-        <label for="main-seasonings">メインで使って欲しい調味料</label>
-        <input
-          id="main-seasonings"
-          type="text"
-          maxlength="120"
-          placeholder="例：味噌、醤油"
-          autocomplete="off"
-        >
-        <p class="seasoning-help">入力した調味料は、AIへの料理指示に自動で追加されます。</p>
+        <div class="seasoning-heading">
+          <h3>メインで使って欲しい調味料</h3>
+          <span id="seasoning-selected-count" class="seasoning-count">0個選択</span>
+        </div>
+        <p class="seasoning-help">使いたい調味料をタップ。複数選択できます。</p>
+        <div id="seasoning-list" class="seasoning-list" aria-live="polite"></div>
+
+        <details class="seasoning-manager">
+          <summary>調味料を追加・整理</summary>
+          <div class="seasoning-manager-body">
+            <form id="seasoning-add-form" class="seasoning-add-form" autocomplete="off">
+              <label class="sr-only" for="seasoning-name">追加する調味料名</label>
+              <input id="seasoning-name" type="text" maxlength="40" placeholder="例：豆板醤" required>
+              <button type="submit" class="seasoning-add-button">＋ 追加</button>
+            </form>
+            <div id="seasoning-manager-list" class="seasoning-manager-list"></div>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -145,6 +154,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="./app.js?v=11"></script>
+  <script type="module" src="./app.js?v=12"></script>
 </body>
 </html>
