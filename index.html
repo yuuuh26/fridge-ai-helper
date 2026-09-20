@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=10">
+  <link rel="stylesheet" href="./styles.css?v=11">
 </head>
 <body>
   <main class="app-shell">
@@ -49,13 +49,25 @@
           <p class="empty-note">まだ選ばれていません</p>
         </div>
       </div>
+
+      <div class="seasoning-group">
+        <label for="main-seasonings">メインで使って欲しい調味料</label>
+        <input
+          id="main-seasonings"
+          type="text"
+          maxlength="120"
+          placeholder="例：味噌、醤油"
+          autocomplete="off"
+        >
+        <p class="seasoning-help">入力した調味料は、AIへの料理指示に自動で追加されます。</p>
+      </div>
     </section>
 
     <section class="pantry" aria-labelledby="pantry-heading">
       <div class="section-title-row pantry-title-row">
         <div>
           <h2 id="pantry-heading">食材候補</h2>
-          <p class="section-help">カードをタップ：未選択 → 使ってもOK → 必ず使う</p>
+          <p class="section-help">カードをタップ：使ってもOK → 未選択 → 必ず使う → 使ってもOK</p>
         </div>
       </div>
 
@@ -133,6 +145,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="./app.js?v=10"></script>
+  <script type="module" src="./app.js?v=11"></script>
 </body>
 </html>
