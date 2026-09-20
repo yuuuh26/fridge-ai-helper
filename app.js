@@ -1,4 +1,4 @@
-import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=11';
+import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=12';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -7,10 +7,17 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=11';
+} from './utils.js?v=12';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
-const MAIN_SEASONINGS_STORAGE_KEY = 'fridge-ai-helper-main-seasonings';
+const LEGACY_MAIN_SEASONINGS_STORAGE_KEY = 'fridge-ai-helper-main-seasonings';
+const SEASONING_OPTIONS_STORAGE_KEY = 'fridge-ai-helper-seasoning-options-v1';
+const SEASONING_SELECTED_STORAGE_KEY = 'fridge-ai-helper-seasoning-selected-v1';
+const DEFAULT_SEASONINGS = Object.freeze([
+  '醤油', '味噌', '塩', 'こしょう', '砂糖', 'みりん', '酒', '酢',
+  'めんつゆ', 'ポン酢', 'ごま油', 'オリーブオイル', 'オイスターソース',
+  '鶏ガラスープの素', 'コンソメ', 'カレー粉', 'にんにく', 'しょうが'
+]);
 const STOCK_MODES = ['回分', '常時'];
 const stateLabels = { none: '未選択', optional: '使ってもOK', required: '必ず使う' };
 const stateIcons = { none: '○', optional: '●', required: '●' };
@@ -27,7 +34,11 @@ const elements = {
   requiredSummary: document.querySelector('#required-summary'),
   optionalSummary: document.querySelector('#optional-summary'),
   selectedCount: document.querySelector('#selected-count'),
-  mainSeasonings: document.querySelector('#main-seasonings'),
+  seasoningList: document.querySelector('#seasoning-list'),
+  seasoningSelectedCount: document.querySelector('#seasoning-selected-count'),
+  seasoningManagerList: document.querySelector('#seasoning-manager-list'),
+  seasoningAddForm: document.querySelector('#seasoning-add-form'),
+  seasoningNameInput: document.querySelector('#seasoning-name'),
   copyButton: document.querySelector('#copy-button'),
   copyUrlButton: document.querySelector('#copy-url-button'),
   appUrl: document.querySelector('#app-url'),
@@ -39,6 +50,8 @@ const elements = {
 };
 
 let ingredients = [];
+let seasonings = [];
+let selectedSeasoningIds = new Set();
 let sessionDisplayOrder = [];
 let wasHidden = false;
 let pendingDeleteId = null;
@@ -58,6 +71,111 @@ function showToast(message, type = 'success') {
   elements.toast.classList.toggle('error', type === 'error');
   elements.toast.classList.add('show');
   toastTimer = setTimeout(() => elements.toast.classList.remove('show'), 2600);
+}
+
+function normalizeSeasoningName(name) {
+  return String(name || '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ja-JP');
+}
+
+function createSeasoningId(name) {
+  const base = normalizeSeasoningName(name)
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  return `seasoning-${base || createId()}`;
+}
+
+function saveSeasoningState() {
+  try {
+    localStorage.setItem(SEASONING_OPTIONS_STORAGE_KEY, JSON.stringify(seasonings));
+    localStorage.setItem(SEASONING_SELECTED_STORAGE_KEY, JSON.stringify([...selectedSeasoningIds]));
+  } catch (error) {
+    console.warn('Seasoning state could not be saved', error);
+  }
+}
+
+function loadSeasoningState() {
+  try {
+    const savedOptions = JSON.parse(localStorage.getItem(SEASONING_OPTIONS_STORAGE_KEY) || 'null');
+    const savedSelected = JSON.parse(localStorage.getItem(SEASONING_SELECTED_STORAGE_KEY) || 'null');
+
+    if (Array.isArray(savedOptions) && savedOptions.length) {
+      seasonings = savedOptions
+        .filter(item => item && typeof item.name === 'string' && item.name.trim())
+        .map(item => ({ id: String(item.id || createSeasoningId(item.name)), name: item.name.trim() }));
+      selectedSeasoningIds = new Set(Array.isArray(savedSelected) ? savedSelected.map(String) : []);
+      return;
+    }
+
+    seasonings = DEFAULT_SEASONINGS.map(name => ({ id: createSeasoningId(name), name }));
+    selectedSeasoningIds = new Set();
+
+    const legacyText = localStorage.getItem(LEGACY_MAIN_SEASONINGS_STORAGE_KEY) || '';
+    const legacyNames = legacyText
+      .split(/[、,\n]/)
+      .map(name => name.trim())
+      .filter(Boolean);
+
+    legacyNames.forEach(name => {
+      const normalized = normalizeSeasoningName(name);
+      let existing = seasonings.find(item => normalizeSeasoningName(item.name) === normalized);
+      if (!existing) {
+        existing = { id: createSeasoningId(name), name };
+        seasonings.push(existing);
+      }
+      selectedSeasoningIds.add(existing.id);
+    });
+
+    localStorage.removeItem(LEGACY_MAIN_SEASONINGS_STORAGE_KEY);
+    saveSeasoningState();
+  } catch (error) {
+    console.warn('Seasoning state could not be loaded', error);
+    seasonings = DEFAULT_SEASONINGS.map(name => ({ id: createSeasoningId(name), name }));
+    selectedSeasoningIds = new Set();
+  }
+}
+
+function renderSeasonings() {
+  const fragment = document.createDocumentFragment();
+
+  seasonings.forEach(item => {
+    const selected = selectedSeasoningIds.has(item.id);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'seasoning-option';
+    button.dataset.id = item.id;
+    button.setAttribute('aria-pressed', String(selected));
+    button.textContent = item.name;
+    fragment.append(button);
+  });
+
+  elements.seasoningList.replaceChildren(fragment);
+  elements.seasoningSelectedCount.textContent = `${selectedSeasoningIds.size}個選択`;
+
+  const managerFragment = document.createDocumentFragment();
+  seasonings.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'seasoning-manager-row';
+
+    const name = document.createElement('span');
+    name.textContent = item.name;
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'seasoning-remove-button';
+    remove.dataset.id = item.id;
+    remove.textContent = '削除';
+    remove.setAttribute('aria-label', `${item.name}を削除`);
+
+    row.append(name, remove);
+    managerFragment.append(row);
+  });
+  elements.seasoningManagerList.replaceChildren(managerFragment);
+}
+
+function selectedSeasoningNames() {
+  return seasonings
+    .filter(item => selectedSeasoningIds.has(item.id))
+    .map(item => item.name);
 }
 
 function ingredientSummary(item) {
@@ -501,16 +619,53 @@ async function copyText(text) {
   if (!copied) throw new Error('Clipboard API is unavailable');
 }
 
-elements.mainSeasonings.addEventListener('input', () => {
-  try {
-    localStorage.setItem(MAIN_SEASONINGS_STORAGE_KEY, elements.mainSeasonings.value);
-  } catch (error) {
-    console.warn('Main seasonings could not be saved', error);
+elements.seasoningList.addEventListener('click', event => {
+  const button = event.target.closest('.seasoning-option');
+  if (!button) return;
+
+  const id = button.dataset.id;
+  if (selectedSeasoningIds.has(id)) {
+    selectedSeasoningIds.delete(id);
+  } else {
+    selectedSeasoningIds.add(id);
   }
+  saveSeasoningState();
+  renderSeasonings();
+});
+
+elements.seasoningAddForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const name = elements.seasoningNameInput.value.trim().replace(/\s+/g, ' ');
+  if (!name) return;
+
+  const normalized = normalizeSeasoningName(name);
+  if (seasonings.some(item => normalizeSeasoningName(item.name) === normalized)) {
+    showToast('⚠️ 同じ調味料が登録されています', 'error');
+    return;
+  }
+
+  seasonings.push({ id: createSeasoningId(name), name });
+  elements.seasoningNameInput.value = '';
+  saveSeasoningState();
+  renderSeasonings();
+  showToast(`✓ 「${name}」を追加しました`);
+});
+
+elements.seasoningManagerList.addEventListener('click', event => {
+  const button = event.target.closest('.seasoning-remove-button');
+  if (!button) return;
+
+  const id = button.dataset.id;
+  const item = seasonings.find(candidate => candidate.id === id);
+  seasonings = seasonings.filter(candidate => candidate.id !== id);
+  selectedSeasoningIds.delete(id);
+  saveSeasoningState();
+  renderSeasonings();
+  showToast(`✓ 「${item?.name || '調味料'}」を削除しました`);
 });
 
 elements.copyButton.addEventListener('click', async () => {
-  const prompt = generateAiPrompt(ingredients, elements.mainSeasonings.value);
+  const prompt = generateAiPrompt(ingredients, selectedSeasoningNames());
   if (!prompt) {
     showToast('食材を1つ以上選択してください', 'error');
     return;
@@ -564,11 +719,8 @@ async function persistLegacyCategories() {
 
 async function init() {
   elements.appUrl.textContent = PUBLIC_URL;
-  try {
-    elements.mainSeasonings.value = localStorage.getItem(MAIN_SEASONINGS_STORAGE_KEY) || '';
-  } catch (error) {
-    console.warn('Main seasonings could not be loaded', error);
-  }
+  loadSeasoningState();
+  renderSeasonings();
 
   try {
     ingredients = await getAllIngredients();
@@ -597,7 +749,7 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=11', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=12', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }
