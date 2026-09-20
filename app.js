@@ -1,4 +1,4 @@
-import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=9';
+import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=10';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -7,7 +7,7 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=9';
+} from './utils.js?v=10';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
 const STOCK_MODES = ['回分', '常時'];
@@ -37,6 +37,8 @@ const elements = {
 };
 
 let ingredients = [];
+let sessionDisplayOrder = [];
+let wasHidden = false;
 let pendingDeleteId = null;
 let toastTimer;
 let summaryPressTimer = null;
@@ -270,17 +272,39 @@ function createIngredientCard(item) {
   return card;
 }
 
+function rebuildSessionDisplayOrder() {
+  sessionDisplayOrder = [...ingredients]
+    .sort((a, b) => {
+      const categoryDiff = INGREDIENT_CATEGORIES.indexOf(ingredientCategory(a))
+        - INGREDIENT_CATEGORIES.indexOf(ingredientCategory(b));
+      if (categoryDiff) return categoryDiff;
+
+      const aUnselected = a.selectionState === 'none' ? 1 : 0;
+      const bUnselected = b.selectionState === 'none' ? 1 : 0;
+      if (aUnselected !== bUnselected) return aUnselected - bUnselected;
+
+      return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+    })
+    .map(item => item.id);
+}
+
+function sortBySessionDisplayOrder(items) {
+  const orderMap = new Map(sessionDisplayOrder.map((id, index) => [id, index]));
+  return [...items].sort((a, b) => {
+    const aOrder = orderMap.has(a.id) ? orderMap.get(a.id) : Number.MAX_SAFE_INTEGER;
+    const bOrder = orderMap.has(b.id) ? orderMap.get(b.id) : Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+  });
+}
+
 function renderCategorizedIngredientList(target, items) {
   const fragment = document.createDocumentFragment();
 
   INGREDIENT_CATEGORIES.forEach(category => {
-    const categoryItems = sortIngredientsByCategory(
+    const categoryItems = sortBySessionDisplayOrder(
       items.filter(item => ingredientCategory(item) === category)
-    ).sort((a, b) => {
-      const aUnselected = a.selectionState === 'none' ? 1 : 0;
-      const bUnselected = b.selectionState === 'none' ? 1 : 0;
-      return aUnselected - bUnselected;
-    });
+    );
     if (!categoryItems.length) return;
 
     const group = document.createElement('div');
@@ -379,6 +403,7 @@ elements.addForm.addEventListener('submit', async event => {
   try {
     await saveIngredient(ingredient);
     ingredients.push(ingredient);
+    sessionDisplayOrder.push(ingredient.id);
     elements.nameInput.value = '';
     render();
     showToast(`✓ 「${name}」を追加しました`);
@@ -447,6 +472,7 @@ elements.deleteDialog.addEventListener('close', async () => {
   try {
     await removeIngredient(pendingDeleteId);
     ingredients = ingredients.filter(candidate => candidate.id !== pendingDeleteId);
+    sessionDisplayOrder = sessionDisplayOrder.filter(id => id !== pendingDeleteId);
     render();
     showToast(`✓ 「${item?.name || '食材'}」を削除しました`);
   } catch (error) {
@@ -531,6 +557,7 @@ async function init() {
   try {
     ingredients = await getAllIngredients();
     await persistLegacyCategories();
+    rebuildSessionDisplayOrder();
     render();
   } catch (error) {
     console.error(error);
@@ -539,9 +566,22 @@ async function init() {
   }
   setupPersistentStorage();
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      wasHidden = true;
+      return;
+    }
+
+    if (document.visibilityState === 'visible' && wasHidden) {
+      wasHidden = false;
+      rebuildSessionDisplayOrder();
+      render();
+    }
+  });
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=9', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=10', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }
