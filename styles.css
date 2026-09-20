@@ -79,6 +79,12 @@ h2 { margin: 0; font-size: 1.1rem; }
 .summary-chip-action.is-pressing { background: rgba(255,255,255,.16); transform: scale(.96); }
 .empty-note { margin: 4px 0 0; color: var(--muted); font-size: .8rem; }
 
+.seasoning-group { display: grid; gap: 8px; margin-top: 14px; padding: 13px; border: 1px solid rgba(255, 212, 121, .24); border-radius: 16px; background: rgba(255, 212, 121, .055); }
+.seasoning-group label { color: var(--amber); font-size: .9rem; font-weight: 800; }
+.seasoning-group input { width: 100%; min-height: 46px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; outline: none; background: #0b201b; color: var(--text); }
+.seasoning-group input:focus { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255, 212, 121, .12); }
+.seasoning-help { margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.5; }
+
 .pantry-title-row { align-items: flex-start; }
 .section-help { margin: 5px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
 .add-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(126px, 150px) auto; gap: 8px; margin: 16px 0; }
