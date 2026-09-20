@@ -1,4 +1,4 @@
-import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=10';
+import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=11';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -7,9 +7,10 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=10';
+} from './utils.js?v=11';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
+const MAIN_SEASONINGS_STORAGE_KEY = 'fridge-ai-helper-main-seasonings';
 const STOCK_MODES = ['回分', '常時'];
 const stateLabels = { none: '未選択', optional: '使ってもOK', required: '必ず使う' };
 const stateIcons = { none: '○', optional: '●', required: '●' };
@@ -26,6 +27,7 @@ const elements = {
   requiredSummary: document.querySelector('#required-summary'),
   optionalSummary: document.querySelector('#optional-summary'),
   selectedCount: document.querySelector('#selected-count'),
+  mainSeasonings: document.querySelector('#main-seasonings'),
   copyButton: document.querySelector('#copy-button'),
   copyUrlButton: document.querySelector('#copy-url-button'),
   appUrl: document.querySelector('#app-url'),
@@ -499,8 +501,16 @@ async function copyText(text) {
   if (!copied) throw new Error('Clipboard API is unavailable');
 }
 
+elements.mainSeasonings.addEventListener('input', () => {
+  try {
+    localStorage.setItem(MAIN_SEASONINGS_STORAGE_KEY, elements.mainSeasonings.value);
+  } catch (error) {
+    console.warn('Main seasonings could not be saved', error);
+  }
+});
+
 elements.copyButton.addEventListener('click', async () => {
-  const prompt = generateAiPrompt(ingredients);
+  const prompt = generateAiPrompt(ingredients, elements.mainSeasonings.value);
   if (!prompt) {
     showToast('食材を1つ以上選択してください', 'error');
     return;
@@ -555,6 +565,12 @@ async function persistLegacyCategories() {
 async function init() {
   elements.appUrl.textContent = PUBLIC_URL;
   try {
+    elements.mainSeasonings.value = localStorage.getItem(MAIN_SEASONINGS_STORAGE_KEY) || '';
+  } catch (error) {
+    console.warn('Main seasonings could not be loaded', error);
+  }
+
+  try {
     ingredients = await getAllIngredients();
     await persistLegacyCategories();
     rebuildSessionDisplayOrder();
@@ -581,7 +597,7 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=10', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=11', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }
