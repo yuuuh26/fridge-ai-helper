@@ -98,7 +98,7 @@ function loadSeasoningState() {
     const savedOptions = JSON.parse(localStorage.getItem(SEASONING_OPTIONS_STORAGE_KEY) || 'null');
     const savedSelected = JSON.parse(localStorage.getItem(SEASONING_SELECTED_STORAGE_KEY) || 'null');
 
-    if (Array.isArray(savedOptions) && savedOptions.length) {
+    if (Array.isArray(savedOptions)) {
       seasonings = savedOptions
         .filter(item => item && typeof item.name === 'string' && item.name.trim())
         .map(item => ({ id: String(item.id || createSeasoningId(item.name)), name: item.name.trim() }));
