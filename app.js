@@ -1,4 +1,4 @@
-import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=12';
+import { getAllIngredients, removeIngredient, saveIngredient } from './db.js?v=13';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -7,7 +7,7 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=12';
+} from './utils.js?v=13';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
 const LEGACY_MAIN_SEASONINGS_STORAGE_KEY = 'fridge-ai-helper-main-seasonings';
@@ -749,7 +749,7 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=12', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=13', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }
