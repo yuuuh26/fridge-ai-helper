@@ -53,7 +53,7 @@ export function formatIngredient(ingredient) {
   return `・${ingredient.name} ${frozenState}`;
 }
 
-export function generateAiPrompt(ingredients, mainSeasonings = '') {
+export function generateAiPrompt(ingredients, mainSeasonings = []) {
   const selected = sortIngredientsByCategory(
     ingredients.filter(item => item.selectionState !== 'none')
   );
@@ -61,14 +61,16 @@ export function generateAiPrompt(ingredients, mainSeasonings = '') {
 
   const required = selected.filter(item => item.selectionState === 'required');
   const optional = selected.filter(item => item.selectionState === 'optional');
-  const seasoningText = String(mainSeasonings || '').trim();
+  const seasoningList = Array.isArray(mainSeasonings)
+    ? mainSeasonings.map(item => String(item || '').trim()).filter(Boolean)
+    : String(mainSeasonings || '').split(/[、,\n]/).map(item => item.trim()).filter(Boolean);
   const sections = [
     '料理を考えてください。',
     '※各食材の末尾に、保存状態を［冷凍中］または［非冷凍］で記載しています。'
   ];
 
-  if (seasoningText) {
-    sections.push(`【メインで使ってほしい調味料】\n\n${seasoningText}\n\nこの調味料を味付けの中心として優先的に使用してください。`);
+  if (seasoningList.length) {
+    sections.push(`【メインで使ってほしい調味料】\n\n${seasoningList.map(item => `・${item}`).join('\n')}\n\n上記の調味料を味付けの中心として優先的に使用してください。`);
   }
 
   if (required.length) {
