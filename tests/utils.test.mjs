@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { formatIngredient, generateAiPrompt, nextSelectionState, normalizeIngredientName } from '../utils.js';
 
 test('selection state cycles in the specified order', () => {
-  assert.equal(nextSelectionState('none'), 'optional');
-  assert.equal(nextSelectionState('optional'), 'required');
-  assert.equal(nextSelectionState('required'), 'none');
+  assert.equal(nextSelectionState('none'), 'required');
+  assert.equal(nextSelectionState('required'), 'optional');
+  assert.equal(nextSelectionState('optional'), 'none');
 });
 
 test('ingredient names are normalized for duplicate checks', () => {
@@ -13,9 +13,9 @@ test('ingredient names are normalized for duplicate checks', () => {
   assert.equal(normalizeIngredientName('ＡＢＣ'), 'abc');
 });
 
-test('ingredient formatting copies ingredient names only', () => {
-  assert.equal(formatIngredient({ name: '鶏もも肉', quantity: '2', unit: '回分', isFrozen: true }), '・鶏もも肉');
-  assert.equal(formatIngredient({ name: '塩', quantity: '', unit: '常時', isFrozen: false }), '・塩');
+test('ingredient formatting includes frozen state but not stock count', () => {
+  assert.equal(formatIngredient({ name: '鶏もも肉', quantity: '2', unit: '回分', isFrozen: true }), '・鶏もも肉 ［冷凍中］');
+  assert.equal(formatIngredient({ name: '塩', quantity: '', unit: '常時', isFrozen: false }), '・塩 ［非冷凍］');
 });
 
 test('empty selection does not generate a prompt', () => {
@@ -33,6 +33,7 @@ test('prompt includes only present classifications', () => {
   assert.doesNotMatch(prompt, /卵：3|3回分/);
   assert.match(prompt, /【冷蔵庫・冷凍庫にあるので/);
   assert.match(prompt, /・玉ねぎ/);
-  assert.doesNotMatch(prompt, /玉ねぎ：2|2回分|冷凍中/);
+  assert.doesNotMatch(prompt, /玉ねぎ：2|2回分/);
+  assert.match(prompt, /玉ねぎ ［冷凍中］/);
   assert.doesNotMatch(prompt, /牛乳/);
 });
