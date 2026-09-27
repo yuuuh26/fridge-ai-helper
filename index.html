@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=13">
+  <link rel="stylesheet" href="./styles.css?v=14">
 </head>
 <body>
   <main class="app-shell">
@@ -23,6 +23,18 @@
       </div>
       <div class="hero-icon" aria-hidden="true">🥬</div>
     </header>
+
+    <nav class="fridge-switcher" aria-label="冷蔵庫の切り替え">
+      <div class="fridge-switcher-heading">
+        <strong>冷蔵庫</strong>
+        <span id="fridge-count">1 / 5</span>
+      </div>
+      <div class="fridge-switcher-row">
+        <div id="fridge-tabs" class="fridge-tabs" role="tablist" aria-label="冷蔵庫"></div>
+        <button id="add-fridge-button" class="fridge-add-button" type="button" aria-label="冷蔵庫を追加">＋</button>
+      </div>
+      <button id="manage-fridge-button" class="fridge-manage-button" type="button">表示中の冷蔵庫の名前変更・削除</button>
+    </nav>
 
     <section class="selection-board" aria-labelledby="selected-heading">
       <div class="section-title-row">
@@ -154,6 +166,51 @@
     </form>
   </dialog>
 
-  <script type="module" src="./app.js?v=13"></script>
+  <dialog id="create-fridge-dialog" class="fridge-dialog">
+    <form id="create-fridge-form">
+      <h2>冷蔵庫を追加</h2>
+      <label class="fridge-name-label" for="new-fridge-name">冷蔵庫の名前</label>
+      <input id="new-fridge-name" type="text" maxlength="24" required placeholder="例：実家">
+      <fieldset class="copy-modes">
+        <legend>作成方法</legend>
+        <label><input type="radio" name="copy-mode" value="full" checked><span><strong>完全コピー</strong><small>食材・冷凍状態・選択状態・調味料をコピー</small></span></label>
+        <label><input type="radio" name="copy-mode" value="items"><span><strong>項目コピー</strong><small>食材・冷凍状態・調味料をコピーし、選択だけ解除</small></span></label>
+        <label><input type="radio" name="copy-mode" value="empty"><span><strong>新規作成</strong><small>食材も調味料もない状態から開始</small></span></label>
+      </fieldset>
+      <p id="copy-source" class="dialog-hint"></p>
+      <div class="dialog-actions">
+        <button id="cancel-create-fridge" type="button" class="secondary-button">キャンセル</button>
+        <button id="submit-create-fridge" type="submit" class="add-button">作成する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="manage-fridge-dialog" class="fridge-dialog">
+    <form id="rename-fridge-form">
+      <h2>冷蔵庫の管理</h2>
+      <label class="fridge-name-label" for="rename-fridge-name">名前を変更</label>
+      <input id="rename-fridge-name" type="text" maxlength="24" required>
+      <button type="submit" class="secondary-button">名前を保存</button>
+      <div class="fridge-manage-actions">
+        <button id="delete-fridge-button" type="button" class="danger-outline-button">この冷蔵庫を削除</button>
+        <button id="cancel-manage-fridge" type="button" class="secondary-button">閉じる</button>
+      </div>
+      <p id="last-fridge-note" class="dialog-hint">最後の1個は削除できません。</p>
+    </form>
+  </dialog>
+
+  <dialog id="delete-fridge-dialog" class="delete-dialog">
+    <form method="dialog">
+      <div class="dialog-icon" aria-hidden="true">🗑️</div>
+      <h2>冷蔵庫を削除しますか？</h2>
+      <p id="delete-fridge-message"></p>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary-button">キャンセル</button>
+        <button value="confirm" class="danger-button">削除する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./app.js?v=14"></script>
 </body>
 </html>
