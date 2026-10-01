@@ -1,12 +1,13 @@
-const CACHE_NAME = 'fridge-ai-helper-shell-v14';
+const CACHE_NAME = 'fridge-ai-helper-shell-v15';
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css?v=14',
-  './app.js?v=14',
-  './db.js?v=14',
-  './fridges.js?v=14',
-  './utils.js?v=14',
+  './styles.css?v=15',
+  './app.js?v=15',
+  './db.js?v=15',
+  './backup.js?v=15',
+  './fridges.js?v=15',
+  './utils.js?v=15',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

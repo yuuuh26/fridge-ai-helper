@@ -20,8 +20,8 @@ await new Promise((resolve, reject) => {
 });
 
 const {
-  createFridge, deleteFridge, getAllIngredients, getFridges, saveIngredient,
-  saveFridge
+  createFridge, deleteFridge, getAllIngredients, getDatabaseSnapshot, getFridges,
+  replaceDatabaseSnapshot, saveIngredient, saveFridge
 } = await import('../db.js');
 
 test('v1 ingredients migrate into home without changing selection or frozen state', async () => {
@@ -69,4 +69,48 @@ test('the same ingredient name is allowed in another fridge and the limit is fiv
     id: 'sixth', name: '6個目', createdAt: new Date().toISOString()
   }));
   assert.equal((await getFridges()).length, 5);
+});
+
+
+test('backup snapshot replacement is complete and rolls back on constraint failure', async () => {
+  const replacement = {
+    fridges: [{
+      id: 'home',
+      name: '自宅',
+      createdAt: '2026-10-01T00:00:00Z',
+      seasonings: [{ id: 'miso', name: '味噌' }],
+      selectedSeasoningIds: ['miso']
+    }],
+    ingredients: [{
+      id: 'restored',
+      fridgeId: 'home',
+      name: '白菜',
+      normalizedName: '白菜',
+      selectionState: 'optional',
+      category: 'vegetable',
+      quantity: '2',
+      unit: '回分',
+      isFrozen: false,
+      createdAt: '2026-10-01T00:00:00Z',
+      updatedAt: '2026-10-01T00:00:00Z'
+    }]
+  };
+
+  await replaceDatabaseSnapshot(replacement);
+  const restored = await getDatabaseSnapshot();
+  assert.equal(restored.fridges.length, 1);
+  assert.equal(restored.ingredients.length, 1);
+  assert.equal(restored.ingredients[0].name, '白菜');
+  assert.deepEqual(restored.fridges[0].selectedSeasoningIds, ['miso']);
+
+  const beforeFailure = JSON.stringify(restored);
+  await assert.rejects(replaceDatabaseSnapshot({
+    fridges: replacement.fridges,
+    ingredients: [
+      replacement.ingredients[0],
+      { ...replacement.ingredients[0], id: 'duplicate-name' }
+    ]
+  }));
+
+  assert.equal(JSON.stringify(await getDatabaseSnapshot()), beforeFailure);
 });
