@@ -105,6 +105,37 @@ export function removeIngredient(id) {
   return runTransaction(INGREDIENTS, transaction => transaction.objectStore(INGREDIENTS).delete(id));
 }
 
+export async function getDatabaseSnapshot() {
+  const database = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([FRIDGES, INGREDIENTS], 'readonly');
+    const fridgeRequest = transaction.objectStore(FRIDGES).getAll();
+    const ingredientRequest = transaction.objectStore(INGREDIENTS).getAll();
+
+    transaction.oncomplete = () => {
+      const fridges = (fridgeRequest.result || [])
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      const ingredients = (ingredientRequest.result || [])
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      resolve({ fridges, ingredients });
+    };
+    transaction.onerror = () => reject(transaction.error || new Error('バックアップ用データを読み込めませんでした'));
+    transaction.onabort = () => reject(transaction.error || new Error('バックアップ用データを読み込めませんでした'));
+  });
+}
+
+export function replaceDatabaseSnapshot(snapshot) {
+  return runTransaction([FRIDGES, INGREDIENTS], transaction => {
+    const fridgeStore = transaction.objectStore(FRIDGES);
+    const ingredientStore = transaction.objectStore(INGREDIENTS);
+
+    fridgeStore.clear();
+    ingredientStore.clear();
+    snapshot.fridges.forEach(item => fridgeStore.add({ ...item }));
+    snapshot.ingredients.forEach(item => ingredientStore.add({ ...item }));
+  });
+}
+
 export function saveFridge(fridge) {
   return runTransaction(FRIDGES, transaction => transaction.objectStore(FRIDGES).put(fridge));
 }
