@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=15">
+  <link rel="stylesheet" href="./styles.css?v=16">
 </head>
 <body>
   <main class="app-shell">
@@ -143,11 +143,16 @@
             <strong>データのバックアップ</strong>
             <p>全冷蔵庫・食材・調味料・選択状態を1つのJSONファイルに保存できます。</p>
           </div>
+          <div class="backup-progress-row">
+            <span>バックアップ後の変更</span>
+            <strong id="backup-change-count">0 / 15件</strong>
+          </div>
           <div class="backup-actions">
             <button id="backup-export-button" class="secondary-button" type="button">JSONを書き出す</button>
             <button id="backup-import-button" class="secondary-button" type="button">JSONを読み込む</button>
           </div>
           <input id="backup-file-input" class="sr-only" type="file" accept=".json,application/json">
+          <p class="backup-warning">15件ごとにバックアップを案内します。「使ってもOK／必ず使う」などの一時的な選択変更は数えません。</p>
           <p class="backup-warning">読み込みを実行すると、現在のアプリ内データはバックアップ内容に置き換わります。</p>
         </div>
         <a class="repo-link" href="https://github.com/yuuuh26/fridge-ai-helper" target="_blank" rel="noopener noreferrer">GitHubリポジトリを開く</a>
@@ -223,6 +228,18 @@
     </form>
   </dialog>
 
+  <dialog id="backup-reminder-dialog" class="delete-dialog">
+    <form method="dialog">
+      <div class="dialog-icon" aria-hidden="true">💾</div>
+      <h2>バックアップしておきませんか？</h2>
+      <p id="backup-reminder-message"></p>
+      <div class="dialog-actions">
+        <button value="later" class="secondary-button">あとで</button>
+        <button id="backup-reminder-export-button" type="button" class="add-button">今すぐ保存</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="import-backup-dialog" class="delete-dialog">
     <form method="dialog">
       <div class="dialog-icon" aria-hidden="true">📦</div>
@@ -235,6 +252,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="./app.js?v=15"></script>
+  <script type="module" src="./app.js?v=16"></script>
 </body>
 </html>

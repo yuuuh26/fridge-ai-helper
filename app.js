@@ -1,9 +1,16 @@
 import {
   createFridge, deleteFridge, getAllIngredients, getDatabaseSnapshot, getFridges, HOME_FRIDGE_ID,
   MAX_FRIDGES, removeIngredient, replaceDatabaseSnapshot, saveFridge, saveIngredient
-} from './db.js?v=15';
-import { backupFilename, createBackupPayload, parseBackupText } from './backup.js?v=15';
-import { prepareFridgeCopy } from './fridges.js?v=15';
+} from './db.js?v=16';
+import { backupFilename, createBackupPayload, parseBackupText } from './backup.js?v=16';
+import {
+  BACKUP_REMINDER_INTERVAL,
+  isBackupRelevantIngredientChange,
+  loadBackupChangeCount,
+  saveBackupChangeCount,
+  shouldShowBackupReminder
+} from './backup-reminder.js?v=16';
+import { prepareFridgeCopy } from './fridges.js?v=16';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -12,7 +19,7 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=15';
+} from './utils.js?v=16';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
 const LEGACY_MAIN_SEASONINGS_STORAGE_KEY = 'fridge-ai-helper-main-seasonings';
@@ -71,6 +78,10 @@ const elements = {
   backupExportButton: document.querySelector('#backup-export-button'),
   backupImportButton: document.querySelector('#backup-import-button'),
   backupFileInput: document.querySelector('#backup-file-input'),
+  backupChangeCount: document.querySelector('#backup-change-count'),
+  backupReminderDialog: document.querySelector('#backup-reminder-dialog'),
+  backupReminderMessage: document.querySelector('#backup-reminder-message'),
+  backupReminderExportButton: document.querySelector('#backup-reminder-export-button'),
   importBackupDialog: document.querySelector('#import-backup-dialog'),
   importBackupMessage: document.querySelector('#import-backup-message')
 };
@@ -92,6 +103,31 @@ let summaryPressTimer = null;
 let summaryPressChip = null;
 let summaryPressStart = null;
 const SUMMARY_LONG_PRESS_MS = 550;
+let backupChangeCount = loadBackupChangeCount(localStorage);
+
+function renderBackupChangeCount() {
+  if (!elements.backupChangeCount) return;
+  elements.backupChangeCount.textContent =
+    backupChangeCount >= BACKUP_REMINDER_INTERVAL
+      ? `${backupChangeCount}件（バックアップ推奨）`
+      : `${backupChangeCount} / ${BACKUP_REMINDER_INTERVAL}件`;
+}
+
+function resetBackupChangeCounter() {
+  backupChangeCount = saveBackupChangeCount(localStorage, 0);
+  renderBackupChangeCount();
+}
+
+function recordBackupRelevantChange() {
+  backupChangeCount = saveBackupChangeCount(localStorage, backupChangeCount + 1);
+  renderBackupChangeCount();
+
+  if (shouldShowBackupReminder(backupChangeCount) && !elements.backupReminderDialog.open) {
+    elements.backupReminderMessage.textContent =
+      `前回のバックアップ以降、保存データが${backupChangeCount}件変更されました。\n今の状態をJSONでバックアップしておくことをおすすめします。`;
+    elements.backupReminderDialog.showModal();
+  }
+}
 
 function createId() {
   return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -258,6 +294,7 @@ elements.createFridgeForm.addEventListener('submit', async event => {
     elements.createFridgeDialog.close();
     navigating = false;
     await switchFridge(fridge.id);
+    recordBackupRelevantChange();
     showToast(`✓ 「${name}」を作成しました`);
   } catch (error) {
     console.error(error);
@@ -282,6 +319,10 @@ elements.renameFridgeForm.addEventListener('submit', async event => {
   const name = elements.renameFridgeName.value.trim().replace(/\s+/g, ' ');
   const fridge = currentFridge();
   if (!name) return;
+  if (name === fridge.name) {
+    elements.manageFridgeDialog.close();
+    return;
+  }
   if (fridges.some(item => item.id !== fridge.id && item.name === name)) {
     showToast('⚠️ 同じ名前の冷蔵庫があります', 'error');
     return;
@@ -293,6 +334,7 @@ elements.renameFridgeForm.addEventListener('submit', async event => {
     fridges = fridges.map(item => item.id === updated.id ? updated : item);
     renderFridgeTabs();
     elements.manageFridgeDialog.close();
+    recordBackupRelevantChange();
     showToast('✓ 名前を変更しました');
   } catch (error) {
     console.error(error);
@@ -318,6 +360,7 @@ elements.deleteFridgeDialog.addEventListener('close', async () => {
     fridges = fridges.filter(item => item.id !== fridge.id);
     const next = fridges.find(item => item.id === HOME_FRIDGE_ID) || fridges[0];
     await switchFridge(next.id);
+    recordBackupRelevantChange();
     showToast(`✓ 「${fridge.name}」を削除しました`);
   } catch (error) {
     console.error(error);
@@ -673,6 +716,7 @@ async function persistChange(id, changes) {
 
   try {
     await trackWrite(saveIngredient(updated));
+    if (isBackupRelevantIngredientChange(changes)) recordBackupRelevantChange();
     return true;
   } catch (error) {
     console.error(error);
@@ -720,6 +764,7 @@ elements.addForm.addEventListener('submit', async event => {
     sessionDisplayOrder.push(ingredient.id);
     elements.nameInput.value = '';
     render();
+    recordBackupRelevantChange();
     showToast(`✓ 「${name}」を追加しました`);
   } catch (error) {
     console.error(error);
@@ -790,6 +835,7 @@ elements.deleteDialog.addEventListener('close', async () => {
     ingredients = ingredients.filter(candidate => candidate.id !== pendingDeleteId);
     sessionDisplayOrder = sessionDisplayOrder.filter(id => id !== pendingDeleteId);
     render();
+    recordBackupRelevantChange();
     showToast(`✓ 「${item?.name || '食材'}」を削除しました`);
   } catch (error) {
     console.error(error);
@@ -854,6 +900,7 @@ elements.seasoningAddForm.addEventListener('submit', async event => {
   renderSeasonings();
   try {
     await saveSeasoningState();
+    recordBackupRelevantChange();
     showToast(`✓ 「${name}」を追加しました`);
   } catch (error) {
     console.error(error);
@@ -875,6 +922,7 @@ elements.seasoningManagerList.addEventListener('click', async event => {
   renderSeasonings();
   try {
     await saveSeasoningState();
+    recordBackupRelevantChange();
     showToast(`✓ 「${item?.name || '調味料'}」を削除しました`);
   } catch (error) {
     console.error(error);
@@ -932,11 +980,17 @@ elements.backupExportButton.addEventListener('click', async () => {
       activeFridgeId
     });
     downloadBackup(backupFilename(), JSON.stringify(payload, null, 2));
+    resetBackupChangeCounter();
+    if (elements.backupReminderDialog.open) elements.backupReminderDialog.close();
     showToast(`✓ ${snapshot.fridges.length}冷蔵庫・${snapshot.ingredients.length}食材を保存しました`);
   } catch (error) {
     console.error(error);
     showToast('⚠️ バックアップを書き出せませんでした', 'error');
   }
+});
+
+elements.backupReminderExportButton.addEventListener('click', () => {
+  elements.backupExportButton.click();
 });
 
 elements.backupImportButton.addEventListener('click', () => {
@@ -999,6 +1053,7 @@ elements.importBackupDialog.addEventListener('close', async () => {
     await switchFridge(target.id);
     await persistLegacyCategories();
     render();
+    resetBackupChangeCounter();
     showToast('✓ バックアップを復元しました');
   } catch (error) {
     console.error(error);
@@ -1040,6 +1095,7 @@ async function persistLegacyCategories() {
 
 async function init() {
   elements.appUrl.textContent = PUBLIC_URL;
+  renderBackupChangeCount();
 
   try {
     fridges = await getFridges();
@@ -1078,7 +1134,7 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=15', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=16', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }

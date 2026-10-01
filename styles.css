@@ -171,6 +171,8 @@ h2 { margin: 0; font-size: 1.1rem; }
 .backup-block { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
 .backup-block strong { color: var(--text); font-size: .86rem; }
 .backup-block p { margin: 4px 0 0; color: var(--muted); font-size: .76rem; line-height: 1.55; }
+.backup-progress-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border: 1px solid rgba(167, 194, 185, .16); border-radius: 10px; background: rgba(255,255,255,.025); color: var(--muted); font-size: .78rem; }
+.backup-progress-row strong { color: var(--mint); font-size: .8rem; text-align: right; }
 .backup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .backup-warning { padding: 9px 10px; border: 1px solid rgba(255, 212, 121, .22); border-radius: 10px; background: rgba(255, 212, 121, .06); color: #e9d8a9 !important; }
 .secondary-button, .danger-button { min-height: 43px; padding: 0 14px; border-radius: 12px; font-weight: 800; }
