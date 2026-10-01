@@ -1,8 +1,9 @@
 import {
-  createFridge, deleteFridge, getAllIngredients, getFridges, HOME_FRIDGE_ID,
-  MAX_FRIDGES, removeIngredient, saveFridge, saveIngredient
-} from './db.js?v=14';
-import { prepareFridgeCopy } from './fridges.js?v=14';
+  createFridge, deleteFridge, getAllIngredients, getDatabaseSnapshot, getFridges, HOME_FRIDGE_ID,
+  MAX_FRIDGES, removeIngredient, replaceDatabaseSnapshot, saveFridge, saveIngredient
+} from './db.js?v=15';
+import { backupFilename, createBackupPayload, parseBackupText } from './backup.js?v=15';
+import { prepareFridgeCopy } from './fridges.js?v=15';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -11,7 +12,7 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=14';
+} from './utils.js?v=15';
 
 const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
 const LEGACY_MAIN_SEASONINGS_STORAGE_KEY = 'fridge-ai-helper-main-seasonings';
@@ -66,7 +67,12 @@ const elements = {
   deleteFridgeButton: document.querySelector('#delete-fridge-button'),
   lastFridgeNote: document.querySelector('#last-fridge-note'),
   deleteFridgeDialog: document.querySelector('#delete-fridge-dialog'),
-  deleteFridgeMessage: document.querySelector('#delete-fridge-message')
+  deleteFridgeMessage: document.querySelector('#delete-fridge-message'),
+  backupExportButton: document.querySelector('#backup-export-button'),
+  backupImportButton: document.querySelector('#backup-import-button'),
+  backupFileInput: document.querySelector('#backup-file-input'),
+  importBackupDialog: document.querySelector('#import-backup-dialog'),
+  importBackupMessage: document.querySelector('#import-backup-message')
 };
 
 let fridges = [];
@@ -80,6 +86,7 @@ let selectedSeasoningIds = new Set();
 let sessionDisplayOrder = [];
 let wasHidden = false;
 let pendingDeleteId = null;
+let pendingBackupImport = null;
 let toastTimer;
 let summaryPressTimer = null;
 let summaryPressChip = null;
@@ -903,6 +910,106 @@ elements.copyUrlButton.addEventListener('click', async () => {
   }
 });
 
+function downloadBackup(filename, text) {
+  const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.hidden = true;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+elements.backupExportButton.addEventListener('click', async () => {
+  try {
+    await Promise.allSettled([...pendingWrites]);
+    const snapshot = await getDatabaseSnapshot();
+    const payload = createBackupPayload({
+      ...snapshot,
+      activeFridgeId
+    });
+    downloadBackup(backupFilename(), JSON.stringify(payload, null, 2));
+    showToast(`✓ ${snapshot.fridges.length}冷蔵庫・${snapshot.ingredients.length}食材を保存しました`);
+  } catch (error) {
+    console.error(error);
+    showToast('⚠️ バックアップを書き出せませんでした', 'error');
+  }
+});
+
+elements.backupImportButton.addEventListener('click', () => {
+  if (navigating) return;
+  elements.backupFileInput.click();
+});
+
+elements.backupFileInput.addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+
+  try {
+    pendingBackupImport = parseBackupText(await file.text());
+    const exportedAt = pendingBackupImport.exportedAt
+      ? new Date(pendingBackupImport.exportedAt).toLocaleString('ja-JP')
+      : '不明';
+    elements.importBackupMessage.textContent =
+      `${pendingBackupImport.fridges.length}個の冷蔵庫・${pendingBackupImport.ingredients.length}品の食材を復元します。\n` +
+      `バックアップ日時：${exportedAt}\n\n現在のデータは置き換わります。`;
+    elements.importBackupDialog.returnValue = '';
+    elements.importBackupDialog.showModal();
+  } catch (error) {
+    console.error(error);
+    pendingBackupImport = null;
+    showToast(`⚠️ ${error?.message || 'バックアップを読み込めませんでした'}`, 'error');
+  }
+});
+
+elements.importBackupDialog.addEventListener('close', async () => {
+  const payload = pendingBackupImport;
+  pendingBackupImport = null;
+  if (elements.importBackupDialog.returnValue !== 'confirm' || !payload) return;
+
+  navigating = true;
+  elements.backupExportButton.disabled = true;
+  elements.backupImportButton.disabled = true;
+  try {
+    await Promise.allSettled([...pendingWrites]);
+    await replaceDatabaseSnapshot(payload);
+    fridges = await getFridges();
+    loadedFridgeId = null;
+    ingredients = [];
+    seasonings = [];
+    selectedSeasoningIds = new Set();
+    sessionDisplayOrder = [];
+
+    const target =
+      fridges.find(fridge => fridge.id === payload.activeFridgeId) ||
+      fridges.find(fridge => fridge.id === HOME_FRIDGE_ID) ||
+      fridges[0];
+
+    try {
+      localStorage.setItem(ACTIVE_FRIDGE_STORAGE_KEY, target.id);
+    } catch {
+      // IndexedDB remains authoritative.
+    }
+
+    navigating = false;
+    await switchFridge(target.id);
+    await persistLegacyCategories();
+    render();
+    showToast('✓ バックアップを復元しました');
+  } catch (error) {
+    console.error(error);
+    showToast('⚠️ バックアップを復元できませんでした', 'error');
+  } finally {
+    navigating = false;
+    elements.backupExportButton.disabled = false;
+    elements.backupImportButton.disabled = false;
+  }
+});
+
 async function setupPersistentStorage() {
   if (!navigator.storage?.persist || !navigator.storage?.persisted) {
     elements.storageStatus.textContent = '未対応';
@@ -971,7 +1078,7 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=14', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+      navigator.serviceWorker.register('./sw.js?v=15', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
     });
   }
 }
