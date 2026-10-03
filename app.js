@@ -1,16 +1,16 @@
 import {
   createFridge, deleteFridge, getAllIngredients, getDatabaseSnapshot, getFridges, HOME_FRIDGE_ID,
-  MAX_FRIDGES, removeIngredient, replaceDatabaseSnapshot, saveFridge, saveIngredient
-} from './db.js?v=16';
-import { backupFilename, createBackupPayload, parseBackupText } from './backup.js?v=16';
+  MAX_FRIDGES, openDatabase, removeIngredient, replaceDatabaseSnapshot, saveFridge, saveIngredient
+} from './db.js?v=17';
+import { backupFilename, createBackupPayload, parseBackupText } from './backup.js?v=17';
 import {
   BACKUP_REMINDER_INTERVAL,
   isBackupRelevantIngredientChange,
   loadBackupChangeCount,
   saveBackupChangeCount,
   shouldShowBackupReminder
-} from './backup-reminder.js?v=16';
-import { prepareFridgeCopy } from './fridges.js?v=16';
+} from './backup-reminder.js?v=17';
+import { prepareFridgeCopy } from './fridges.js?v=17';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -19,9 +19,10 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=16';
+} from './utils.js?v=17';
 
-const PUBLIC_URL = 'https://yuuuh26.github.io/fridge-ai-helper/';
+const CLOUD_URL='https://fridge-ai-helper-backups.dengana-10011212.workers.dev/';
+const PUBLIC_URL = window.location.origin===new URL(CLOUD_URL).origin?CLOUD_URL:'https://yuuuh26.github.io/fridge-ai-helper/';
 const LEGACY_MAIN_SEASONINGS_STORAGE_KEY = 'fridge-ai-helper-main-seasonings';
 const SEASONING_OPTIONS_STORAGE_KEY = 'fridge-ai-helper-seasoning-options-v1';
 const SEASONING_SELECTED_STORAGE_KEY = 'fridge-ai-helper-seasoning-selected-v1';
@@ -98,6 +99,7 @@ let sessionDisplayOrder = [];
 let wasHidden = false;
 let pendingDeleteId = null;
 let pendingBackupImport = null;
+let importRevision;
 let toastTimer;
 let summaryPressTimer = null;
 let summaryPressChip = null;
@@ -244,6 +246,7 @@ async function switchFridge(fridgeId) {
     seasonings = (fridge.seasonings || []).map(item => ({ ...item }));
     selectedSeasoningIds = new Set(fridge.selectedSeasoningIds || []);
     pendingDeleteId = null;
+    await rememberActiveFridge(fridgeId);
     rebuildSessionDisplayOrder();
     renderFridgeTabs();
     renderSeasonings();
@@ -1004,13 +1007,15 @@ elements.backupFileInput.addEventListener('change', async event => {
   if (!file) return;
 
   try {
+    if(file.size>2*1024*1024)throw Error('ファイルは2MBまでです');
     pendingBackupImport = parseBackupText(await file.text());
+    importRevision=(await (await import('./js/cloud-store.mjs')).meta()).revision;
     const exportedAt = pendingBackupImport.exportedAt
       ? new Date(pendingBackupImport.exportedAt).toLocaleString('ja-JP')
       : '不明';
     elements.importBackupMessage.textContent =
       `${pendingBackupImport.fridges.length}個の冷蔵庫・${pendingBackupImport.ingredients.length}品の食材を復元します。\n` +
-      `バックアップ日時：${exportedAt}\n\n現在のデータは置き換わります。`;
+      `バックアップ日時：${exportedAt}\n\n現在のデータは端末内に退避した後、置き換わります。`;
     elements.importBackupDialog.returnValue = '';
     elements.importBackupDialog.showModal();
   } catch (error) {
@@ -1030,7 +1035,7 @@ elements.importBackupDialog.addEventListener('close', async () => {
   elements.backupImportButton.disabled = true;
   try {
     await Promise.allSettled([...pendingWrites]);
-    await replaceDatabaseSnapshot(payload);
+    await replaceDatabaseSnapshot(payload,importRevision);
     fridges = await getFridges();
     loadedFridgeId = null;
     ingredients = [];
@@ -1102,7 +1107,7 @@ async function init() {
     const home = fridges.find(fridge => fridge.id === HOME_FRIDGE_ID);
     if (home && !Array.isArray(home.seasonings)) {
       const updated = { ...home, ...legacySeasoningState() };
-      await saveFridge(updated);
+      await saveFridge(updated,{track:false});
       fridges = fridges.map(fridge => fridge.id === HOME_FRIDGE_ID ? updated : fridge);
     }
     let savedId;
@@ -1117,6 +1122,8 @@ async function init() {
     render();
     showToast('⚠️ 保存データを読み込めませんでした', 'error');
   }
+  window.__FRIDGE_APP_READY__=true;
+  window.dispatchEvent(new window.Event('fridge-ready'));
   setupPersistentStorage();
 
   document.addEventListener('visibilitychange', () => {
@@ -1133,10 +1140,16 @@ async function init() {
   });
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=16', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
-    });
+    navigator.serviceWorker.register('./sw.js?v=17', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
   }
 }
 
 init();
+
+
+async function rememberActiveFridge(id){const {updateMeta}=await import('./js/cloud-store.mjs');await updateMeta(m=>({...m,activeFridgeId:id}));}
+window.FridgeCloud={
+  async confirmAction(title,message,label){return window.confirm(title+'\n\n'+message);},
+  showToast,
+  async refreshData(){await Promise.allSettled([...pendingWrites]);fridges=await getFridges();loadedFridgeId=null;const m=await (await import('./js/cloud-store.mjs')).meta();const target=fridges.find(f=>f.id===m.activeFridgeId)||fridges[0];await switchFridge(target.id);render();}
+};

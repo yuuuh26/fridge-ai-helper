@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=16">
+  <link rel="stylesheet" href="./styles.css?v=17">
 </head>
 <body>
   <main class="app-shell">
@@ -155,8 +155,45 @@
           <p class="backup-warning">15件ごとにバックアップを案内します。「使ってもOK／必ず使う」などの一時的な選択変更は数えません。</p>
           <p class="backup-warning">読み込みを実行すると、現在のアプリ内データはバックアップ内容に置き換わります。</p>
         </div>
+<section class="cloud-card" id="cloudCard">
+  <h2>☁️ クラウドバックアップ</h2>
+  <p class="cloud-help">端末へ保存後、変更を約3秒まとめて自動保存。最新データは期限なし・履歴5件。複数端末の自動同期は行いません。</p>
+  <p id="cloudStatus" class="cloud-status" role="status" aria-live="polite">確認中</p>
+  <div class="setting-row"><span>接続</span><strong id="cloudConnection">未接続</strong></div>
+  <div class="setting-row"><span>前回のクラウド保存</span><strong id="cloudLastSaved">まだ保存していません</strong></div>
+  <div class="setting-row"><span>未送信の変更</span><strong id="cloudPending">確認中</strong></div>
+  <div id="cloudMigration" hidden>
+    <p class="cloud-help">①下の「全データを書き出す」でJSONを保存 → ②クラウド版を開く → ③復旧キーで接続 → ④同じJSONを読み込む。クラウド保存の成功を確認してから、新しいURLをホーム画面へ追加してください。</p>
+    <a class="add-button full cloud-link" href="https://fridge-ai-helper-backups.dengana-10011212.workers.dev/" target="_blank" rel="noopener">クラウド版を開く ↗</a>
+  </div>
+  <div id="cloudHostedControls" hidden>
+    <div id="cloudLogin" class="cloud-fields">
+      <label class="field"><span>端末名</span><input id="deviceName" maxlength="80" value="この端末" autocomplete="off"></label>
+      <label class="field"><span>復旧キー</span><input id="recoveryKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="初回だけ入力"></label>
+      <button class="add-button full" id="cloudLoginButton" type="button">この端末を接続</button>
+    </div>
+    <button class="secondary-button full" id="cloudLogout" hidden type="button">この端末をログアウト</button>
+    <button class="secondary-button full" id="cloudHistoryButton" type="button">履歴から復元</button>
+    <div id="cloudHistory"></div>
+    <details class="cloud-management"><summary>接続した端末を管理</summary>
+      <p class="cloud-help">管理操作のたびに復旧キーを入力してください。キーは操作後に消去します。</p>
+      <label class="field"><span>管理用の復旧キー</span><input id="managementKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+      <button class="secondary-button full" id="cloudDevicesButton" type="button">端末一覧を表示</button><div id="cloudDevices"></div>
+      <button class="danger-button full" id="cloudRevokeAll" type="button">全端末の認証を取り消す</button>
+      <button class="danger-button full" id="cloudRotate" type="button">復旧キーを変更して全端末を取り消す</button>
+    </details>
+    <button class="add-button full" id="cloudSave" type="button">今すぐクラウド保存</button>
+  </div>
+  <hr>
+  <h3>ファイルでバックアップ・移行</h3>
+  <p class="cloud-help">全冷蔵庫・食材・調味料・在庫・選択状態を含めて保存します。</p>
+  <button class="secondary-button full" id="cloudExport" type="button">全データを書き出す（JSON）</button>
+  <label class="secondary-button full cloud-import">バックアップを読み込む<input id="cloudImport" type="file" accept=".json,application/json"></label>
+  <button class="secondary-button full" id="cloudSafetyExport" type="button">復元前の退避データを書き出す</button>
+</section>
+
         <a class="repo-link" href="https://github.com/yuuuh26/fridge-ai-helper" target="_blank" rel="noopener noreferrer">GitHubリポジトリを開く</a>
-        <p class="privacy-note">食材データはこの端末内だけに保存され、外部へ送信されません。</p>
+        <p class="privacy-note">通常は端末に保存します。クラウド版で接続すると、全冷蔵庫のバックアップを専用クラウドへ送信します。</p>
         <p class="credit">Made by YUU</p>
       </div>
     </details>
@@ -252,6 +289,8 @@
     </form>
   </dialog>
 
-  <script type="module" src="./app.js?v=16"></script>
+  <dialog id="newKeyDialog" class="delete-dialog"><h2>新しい復旧キー</h2><p>保存してから閉じてください。閉じるとキーは消去します。</p><input id="newKey" type="password" readonly autocomplete="off"><div class="dialog-actions"><button id="newKeyCopy" type="button" class="add-button">コピー</button><button id="newKeyClose" type="button" class="secondary-button">閉じる</button></div></dialog>
+  <script type="module" src="./js/cloud.mjs"></script>
+  <script type="module" src="./app.js?v=17"></script>
 </body>
 </html>

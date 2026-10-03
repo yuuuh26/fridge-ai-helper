@@ -1,5 +1,7 @@
 const DB_NAME = 'fridge-ai-helper';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
+export const CLOUD_DEFAULTS={key:'state',revision:0,sentRevision:0,lastSaved:null,pending:null};
+export function changed(){if(typeof window!=='undefined')window.dispatchEvent(new window.Event('fridge-change'));}
 const INGREDIENTS = 'ingredients';
 const FRIDGES = 'fridges';
 export const HOME_FRIDGE_ID = 'home';
@@ -39,6 +41,7 @@ export function openDatabase() {
         const fridges = database.createObjectStore(FRIDGES, { keyPath: 'id' });
         fridges.put({ id: HOME_FRIDGE_ID, name: '自宅', createdAt: new Date().toISOString() });
       }
+      if (event.oldVersion < 3) database.createObjectStore('cloud_meta', {keyPath:'key'});
     };
 
     request.onsuccess = () => {
@@ -64,15 +67,18 @@ export function openDatabase() {
 
 function runTransaction(stores, operation) {
   return openDatabase().then(database => new Promise((resolve, reject) => {
-    const transaction = database.transaction(stores, 'readwrite');
+    const transaction = database.transaction([...new Set([].concat(stores,'cloud_meta'))], 'readwrite');
+    transaction.dataChanged = true;
     try {
       operation(transaction);
+      const metaStore=transaction.objectStore('cloud_meta'),request=metaStore.get('state');
+      request.onsuccess=()=>{if(transaction.dataChanged){const m=request.result||CLOUD_DEFAULTS;metaStore.put({...m,revision:m.revision+1});}};
     } catch (error) {
       transaction.abort();
       reject(error);
       return;
     }
-    transaction.oncomplete = () => resolve();
+    transaction.oncomplete = () => {if(transaction.dataChanged)changed();resolve();};
     transaction.onerror = () => reject(transaction.error || new Error('保存できませんでした'));
     transaction.onabort = () => reject(transaction.error || new Error('保存できませんでした'));
   }));
@@ -98,8 +104,10 @@ export async function getAllIngredients(fridgeId) {
 }
 
 export function saveIngredient(ingredient) {
-  return runTransaction(INGREDIENTS, transaction => transaction.objectStore(INGREDIENTS).put(ingredient));
+  return saveChanged(INGREDIENTS,ingredient);
 }
+
+function saveChanged(name,value,track=true){return runTransaction(name,tx=>{tx.dataChanged=false;const store=tx.objectStore(name),r=store.get(value.id);r.onsuccess=()=>{if(JSON.stringify(r.result)!==JSON.stringify(value)){tx.dataChanged=track;store.put(value);}};});}
 
 export function removeIngredient(id) {
   return runTransaction(INGREDIENTS, transaction => transaction.objectStore(INGREDIENTS).delete(id));
@@ -124,20 +132,30 @@ export async function getDatabaseSnapshot() {
   });
 }
 
-export function replaceDatabaseSnapshot(snapshot) {
-  return runTransaction([FRIDGES, INGREDIENTS], transaction => {
-    const fridgeStore = transaction.objectStore(FRIDGES);
-    const ingredientStore = transaction.objectStore(INGREDIENTS);
-
-    fridgeStore.clear();
-    ingredientStore.clear();
-    snapshot.fridges.forEach(item => fridgeStore.add({ ...item }));
-    snapshot.ingredients.forEach(item => ingredientStore.add({ ...item }));
+export async function replaceDatabaseSnapshot(snapshot,expectedRevision) {
+  const database=await openDatabase();
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction([FRIDGES,INGREDIENTS,'cloud_meta'],'readwrite'),cm=tx.objectStore('cloud_meta');
+    const req=cm.get('state');let message='';
+    req.onsuccess=()=>{
+      const m=req.result||CLOUD_DEFAULTS;
+      if(expectedRevision!==undefined&&m.revision!==expectedRevision){message='確認中に編集されたため復元を中止しました';tx.abort();return;}
+      const f=tx.objectStore(FRIDGES).getAll(),i=tx.objectStore(INGREDIENTS).getAll();let count=0;
+      const replace=()=>{if(++count!==2)return;
+        cm.put({key:'safety',createdAt:new Date().toISOString(),data:{app:'fridge-ai-helper',schemaVersion:1,exportedAt:new Date().toISOString(),activeFridgeId:m.activeFridgeId||null,fridges:f.result,ingredients:i.result,revision:m.revision}});
+        tx.objectStore(FRIDGES).clear();tx.objectStore(INGREDIENTS).clear();
+        for(const v of snapshot.fridges)tx.objectStore(FRIDGES).add(v);
+        for(const v of snapshot.ingredients)tx.objectStore(INGREDIENTS).add(v);
+        cm.put({...m,activeFridgeId:snapshot.activeFridgeId||null,revision:m.revision+1,pending:null,needsReview:false});
+      };f.onsuccess=replace;i.onsuccess=replace;
+    };
+    tx.oncomplete=()=>{changed();resolve();};
+    tx.onerror=tx.onabort=()=>reject(Error(message||tx.error?.message||'復元できませんでした'));
   });
 }
 
-export function saveFridge(fridge) {
-  return runTransaction(FRIDGES, transaction => transaction.objectStore(FRIDGES).put(fridge));
+export function saveFridge(fridge,{track=true}={}) {
+  return saveChanged(FRIDGES,fridge,track);
 }
 
 export function createFridge(fridge, copiedIngredients = []) {
