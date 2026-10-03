@@ -1,6 +1,6 @@
 import {APP_ID} from '../js/snapshot.mjs';
 import type {Env} from './worker';
-const expired=`SELECT b.backup_id FROM backups b JOIN backup_retention r ON r.backup_id=b.backup_id WHERE b.app_id=? AND r.version_number IS NOT NULL ORDER BY r.version_number DESC LIMIT -1 OFFSET 5`;
+const expired=`SELECT b.backup_id FROM backups b JOIN backup_retention r ON r.backup_id=b.backup_id WHERE b.app_id=? AND r.version_number IS NOT NULL ORDER BY r.version_number DESC LIMIT -1 OFFSET 3`;
 // Call only after a complete, validated DB readback of the stored snapshot.
 // The monotonic generation number is assigned inside the same transaction as
 // pruning, so simultaneous sends and millisecond ties have a stable order.

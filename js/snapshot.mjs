@@ -1,4 +1,4 @@
-import {validateBackupPayload} from '../backup.js?v=17';
+import {validateBackupPayload} from '../backup.js?v=18';
 export const APP_ID='fridge-ai-helper';
 // Food inventories are text only. Bound snapshots to 2 MiB and split DB rows.
 export const MAX_BYTES=2*1024*1024;

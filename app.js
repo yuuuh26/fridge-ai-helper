@@ -1,16 +1,16 @@
 import {
   createFridge, deleteFridge, getAllIngredients, getDatabaseSnapshot, getFridges, HOME_FRIDGE_ID,
   MAX_FRIDGES, openDatabase, removeIngredient, replaceDatabaseSnapshot, saveFridge, saveIngredient
-} from './db.js?v=17';
-import { backupFilename, createBackupPayload, parseBackupText } from './backup.js?v=17';
+} from './db.js?v=18';
+import { backupFilename, createBackupPayload, parseBackupText } from './backup.js?v=18';
 import {
   BACKUP_REMINDER_INTERVAL,
   isBackupRelevantIngredientChange,
   loadBackupChangeCount,
   saveBackupChangeCount,
   shouldShowBackupReminder
-} from './backup-reminder.js?v=17';
-import { prepareFridgeCopy } from './fridges.js?v=17';
+} from './backup-reminder.js?v=18';
+import { prepareFridgeCopy } from './fridges.js?v=18';
 import {
   generateAiPrompt,
   INGREDIENT_CATEGORIES,
@@ -19,7 +19,7 @@ import {
   nextSelectionState,
   normalizeIngredientName,
   sortIngredientsByCategory
-} from './utils.js?v=17';
+} from './utils.js?v=18';
 
 const CLOUD_URL='https://fridge-ai-helper-backups.dengana-10011212.workers.dev/';
 const PUBLIC_URL = window.location.origin===new URL(CLOUD_URL).origin?CLOUD_URL:'https://yuuuh26.github.io/fridge-ai-helper/';
@@ -1140,7 +1140,7 @@ async function init() {
   });
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=17', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
+    navigator.serviceWorker.register('./sw.js?v=18', { updateViaCache: 'none' }).catch(error => console.warn('Service Worker registration failed', error));
   }
 }
 

@@ -1,4 +1,4 @@
-import {openDatabase,CLOUD_DEFAULTS,replaceDatabaseSnapshot} from '../db.js?v=17';
+import {openDatabase,CLOUD_DEFAULTS,replaceDatabaseSnapshot} from '../db.js?v=18';
 import {validateData} from './snapshot.mjs';
 const done=tx=>new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(tx.error||Error('端末保存に失敗しました'));});
 export async function readRecord(key){const db=await openDatabase();return new Promise((resolve,reject)=>{const r=db.transaction('cloud_meta').objectStore('cloud_meta').get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}

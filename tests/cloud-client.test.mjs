@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 import {IDBFactory,IDBKeyRange} from 'fake-indexeddb';
 import {webcrypto} from 'node:crypto';
 import {build} from 'esbuild';
-const code=await build({stdin:{contents:"import './app.js';import './js/cloud.mjs';import * as db from './db.js?v=17';import * as store from './js/cloud-store.mjs';window.TestApp={db,store};",resolveDir:process.cwd()},bundle:true,format:'iife',write:false});
+const code=await build({stdin:{contents:"import './app.js';import './js/cloud.mjs';import * as db from './db.js?v=18';import * as store from './js/cloud-store.mjs';window.TestApp={db,store};",resolveDir:process.cwd()},bundle:true,format:'iife',write:false});
 const html=await readFile('index.html','utf8'),app=code.outputFiles[0].text;
 const now=new Date().toISOString();
 const item={id:'item-test',fridgeId:'home',name:'玉ねぎ',normalizedName:'玉ねぎ',selectionState:'required',isFrozen:true,unit:'回分',quantity:'2',category:'vegetable',createdAt:now,updatedAt:now};

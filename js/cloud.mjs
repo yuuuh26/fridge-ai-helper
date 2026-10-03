@@ -29,7 +29,7 @@ async function send(manual){
     if(!lock){schedule(2500);return;}
     let m=await meta();
     if(m.needsReview&&!manual){status('既存のクラウド履歴あり：復元または手動保存を選んでください');return;}
-    if(manual&&m.needsReview){const s=await capture();if(s.ingredients.length===0&&s.revision===0&&historyRows.length){status('空の初期データは送信しません。履歴から復元してください');return;}if(!await window.FridgeCloud.confirmAction('現在の端末データを保存しますか？',`食材${s.ingredients.length}件・冷蔵庫${s.fridges.length}件を新しいバックアップとして保存します。クラウドは最新5件を保持します。`,'保存する'))return;await updateMeta(v=>({...v,needsReview:false}));m=await meta();}
+    if(manual&&m.needsReview){const s=await capture();if(s.ingredients.length===0&&s.revision===0&&historyRows.length){status('空の初期データは送信しません。履歴から復元してください');return;}if(!await window.FridgeCloud.confirmAction('現在の端末データを保存しますか？',`食材${s.ingredients.length}件・冷蔵庫${s.fridges.length}件を新しいバックアップとして保存します。クラウドは最新3世代を保持します。`,'保存する'))return;await updateMeta(v=>({...v,needsReview:false}));m=await meta();}
     if(m.revision<=m.sentRevision&&!m.pending&&m.lastSaved){status('クラウド保存済み：変更はありません');return;}
     if(!m.pending){
       const snapshot=await capture();

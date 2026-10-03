@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=17">
+  <link rel="stylesheet" href="./styles.css?v=18">
 </head>
 <body>
   <main class="app-shell">
@@ -157,7 +157,7 @@
         </div>
 <section class="cloud-card" id="cloudCard">
   <h2>☁️ クラウドバックアップ</h2>
-  <p class="cloud-help">端末へ保存後、変更を約3秒まとめて自動保存。最新データは期限なし・履歴5件。複数端末の自動同期は行いません。</p>
+  <p class="cloud-help">端末へ保存後、変更を約3秒まとめて自動保存。最新データは期限なし・履歴3世代。複数端末の自動同期は行いません。</p>
   <p id="cloudStatus" class="cloud-status" role="status" aria-live="polite">確認中</p>
   <div class="setting-row"><span>接続</span><strong id="cloudConnection">未接続</strong></div>
   <div class="setting-row"><span>前回のクラウド保存</span><strong id="cloudLastSaved">まだ保存していません</strong></div>
@@ -291,6 +291,6 @@
 
   <dialog id="newKeyDialog" class="delete-dialog"><h2>新しい復旧キー</h2><p>保存してから閉じてください。閉じるとキーは消去します。</p><input id="newKey" type="password" readonly autocomplete="off"><div class="dialog-actions"><button id="newKeyCopy" type="button" class="add-button">コピー</button><button id="newKeyClose" type="button" class="secondary-button">閉じる</button></div></dialog>
   <script type="module" src="./js/cloud.mjs"></script>
-  <script type="module" src="./app.js?v=17"></script>
+  <script type="module" src="./app.js?v=18"></script>
 </body>
 </html>
