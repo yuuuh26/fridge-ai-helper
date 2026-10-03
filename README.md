@@ -46,3 +46,8 @@ URLのオリジンが異なるため、旧版のIndexedDBは自動では引き�
 Cloudflare WorkersでアプリとAPIを同一オリジンに配信し、専用D1へ保存する。`cloudflare/migrations/`は新規DBへ順番に一度適用する。`BACKUP_TOKEN_SHA256`をSecretsへ設定し、DBを`DB`としてバインドする。更新時には既存DB・キー・セッションを作り直さず、秘密バインドを継承する。
 
 在庫は文字データのみで、1バックアップは2MiBまで。D1の1行制限を避けて分割し、全内容を再取得してSHA-256・形式・件数を確認した後にだけ旧履歴を整理する。自動保存はアプリを開いている間に行い、ブラウザが終了している間の送信は保証しない。
+
+
+## Shared Cloudflare D1
+
+The production Worker uses `personal-apps-shared` and the dedicated SQL prefix `fridge_ai_helper`. Recipe Deck keeps its own database. `wrangler.jsonc` records the production binding; build before deploying. Keep the existing `BACKUP_TOKEN_SHA256` secret. Every app has separate tables, session cookies, key rotation, foreign keys, retention guards and history. The optional `DB_MIGRATION_MODE=1` variable pauses API requests with 503 while moving data; remove it before normal operation. Without `DB_TABLE_PREFIX`, legacy dedicated database deployments continue to work. Existing local IndexedDB and frontend URLs are unchanged.

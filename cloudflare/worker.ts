@@ -1,9 +1,10 @@
+import {appDatabase} from './shared-db';
 import {APP_ID,validateBackup,type Backup} from '../js/snapshot.mjs';
 import {AuthError,verifyKey,getSession,sameOrigin,sessionCookie,sessionRoute} from './sessions';
 import {confirmAndPrune} from './retention';
 type Statement={bind(...args:unknown[]):Statement;first<T=Record<string,unknown>>():Promise<T|null>;all<T=Record<string,unknown>>():Promise<{results:T[]}>};
 type Database={prepare(sql:string):Statement;batch(statements:Statement[]):Promise<unknown[]>};
-export type Env={DB:Database;BACKUP_TOKEN_SHA256:string};
+export type Env={DB:Database;DB_TABLE_PREFIX?:string;DB_MIGRATION_MODE?:string;BACKUP_TOKEN_SHA256:string};
 const ORIGIN='https://yuuuh26.github.io';
 const idPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const columns='backup_id,app_id,schema_version,created_at,received_at,device_id,record_count,source_revision,sha256,byte_length';
@@ -68,6 +69,8 @@ async function finishBackup(env:Env,id:string){
   try{await confirmAndPrune(env,id)}catch{throw new ApiError(503,'保存後の履歴整理を完了できませんでした。過去の履歴と端末の記録を保持しています。同じ送信を再試行してください')}
 }
 export default {async fetch(request:Request,env:Env):Promise<Response> {
+  if(env.DB_MIGRATION_MODE==='1')return new Response(JSON.stringify({error:'クラウドの保存先を移行中です。少し待って再送してください'}),{status:503,headers:{'Content-Type':'application/json;charset=utf-8','Cache-Control':'no-store','Retry-After':'3'}});
+  if(env.DB_TABLE_PREFIX)env={...env,DB:appDatabase(env.DB,env.DB_TABLE_PREFIX,'fridge_ai_helper')};
   const origin=request.headers.get('Origin'),cors=false;
   let cookie:string|undefined;
   try{
